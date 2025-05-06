@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<!--- Kenny Yip coding flappy bird clone in javascript-->
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" ,content="width=device-width, initial-scale=1.0" />
+    <title>MAGGOT☆MART</title>
+    <link rel="stylesheet" href="game.css" />
+    <script src="game.js" type="module"></script>
+  </head>
+  <body style="overflow: show">
+    <canvas id="board"></canvas>
+    <br />
+    <div id="editorControls">
+      <button id="assetplus">AssetID+</button>
+      <button id="assetminus">AssetID-</button>
+      <button id="assetkind">AssetKind</button>
+      <button id="savecookie">Save Cookie</button>
+      <button id="loadcookie">Load Cookie</button>
+      <button id="toclipboard">To Clipboard</button>
+    </div>
+    <br />
+    <div id="editorData">
+      <p id="editorDataPara">Editor data:</p>
+    </div>
+    <canvas id="tempCanvas" style="display: none"></canvas>
+  </body>
+</html>
