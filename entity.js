@@ -63,7 +63,7 @@ export class Entity {
       if (!(element instanceof Unit) || !element.active) {
         if (this.swooshPacer()) {
           this.units[i] = new Unit(worldX, worldY, kind)
-          console.log('added unit')
+          //console.log('added unit')
           break
         }
       }

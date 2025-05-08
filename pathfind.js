@@ -2,7 +2,7 @@ import * as Utils from './utils.js'
 import { Tilegrid } from './tilegrid.js'
 
 const PF_GRID_PASSES = 15
-const GRID_UPDATE_PERIOD = 30
+const GRID_UPDATE_PERIOD = 800
 const TARGET_OFFSET_X = 30
 const TARGET_OFFSET_Y = 30
 const DRAW_WALL_GRID = true
@@ -22,7 +22,8 @@ export class Pathfind {
     this.wallGrid = this.blankGrid(this.cols, this.rows, false)
     this.updateWallGrid()
     this.valueGrid = this.blankGrid(this.cols, this.rows, 0)
-    this.updatePacer = Utils.createTickPacer(GRID_UPDATE_PERIOD)
+    this.updatePacer = Utils.createMillisecondPacer(GRID_UPDATE_PERIOD)
+    
   }
 
   blankGrid (cols, rows, fillvalue) {
@@ -211,8 +212,12 @@ export class Pathfind {
     if (Tilegrid?.grid == null) {
       return
     }
+    if (this.updatePacer()){
+      this.updateValueGrid()
+      //console.log("UPDATE PF GRID")
+    }
 
     //this.updateWallGrid()
-    this.updateValueGrid()
+    
   }
 }
