@@ -14,7 +14,6 @@ class Unit {
     this.worldY = worldY
     this.active = true
     this.imageID = 0
-    this.frame = 0
     this.life = UNIT_LIFE
     this.velX = 0
     this.velY = 0
@@ -24,26 +23,23 @@ class Unit {
         break
       case 1:
         this.velY = Swoosh.speed
-        this.imageID += 8
         break
       case 2:
         this.velX = -Swoosh.speed
-        this.imageID += 16
         break
       case 3:
         this.velX = Swoosh.speed
-        this.imageID += 24
         break
     }
   }
 }
 
-export class Swoosh {
+export class Entity {
   static speed = SWOOSH_SPEED
   static animateSpeed = 60
   constructor (game) {
     this.game = game
-    this.images = null
+    this.imageSets = null
     this.units = new Array(MAX_UNITS)
     this.swooshPacer = Utils.createMillisecondPacer(SWOOSH_RATE_MS)
     this.initImages()
@@ -54,13 +50,7 @@ export class Swoosh {
     sheet.src = './images/swoosh1m.png'
     sheet.onload = () => {
       this.ready = true
-      //up
-      let imagesOrig = Utils.cutSpriteSheet(sheet, 8, 1, 100, 100)
-      //down
-      let imagesD = Utils.rotateImageArray(imagesOrig, 180)
-      let imagesL = Utils.rotateImageArray(imagesOrig, 270)
-      let imagesR = Utils.rotateImageArray(imagesOrig, 90)
-      this.images = imagesOrig.concat(imagesD, imagesL, imagesR)
+      this.images = Utils.cutSpriteSheet(sheet, 8, 1, 100, 100)
       console.log('swoosh images loaded')
     }
   }

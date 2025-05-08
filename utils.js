@@ -151,6 +151,53 @@ export function getSubImage0 (image, startX, startY, width, height) {
   return newimage
 }
 
+export function getSubImageNoAddElement (image, startX, startY, width, height) {
+  if (image.complete == false) {
+    throw new Error("getSubImage0 the input image wasn't loaded yet")
+  }
+  const canvas = document.createElement('canvas')
+  canvas.id = getUnusedHTMLElementID()
+  canvas.width = width
+  canvas.height = height
+  let ctx = canvas.getContext('2d')
+  ctx.drawImage(image, startX, startY, width, height, 0, 0, width, height)
+  //document.body.appendChild(canvas)
+
+  let newimage = canvasToImage(canvas)
+
+  //document.body.removeChild(canvas)
+  return newimage
+}
+
+/**
+ * @param {Array} imageArray - The input image array.
+ * @param {number} degrees - degrees to rotate.
+ * @returns {Array} rotated image array.
+ */
+export function rotateImageArray (imageArray, degrees) {
+  console.log(typeof imageArray)
+  if (!imageArray instanceof Array) {
+    console.error('rotateImageArray: imageArray invalid data')
+    return
+  }
+  if (typeof degrees != 'number') {
+    console.error('rotateImageArray: degrees invalid data')
+    return
+  }
+  let length = imageArray.length
+  let outputArr = new Array(length)
+  for (let i = 0; i < length; i++) {
+    let currentImage = imageArray[i]
+    if (!currentImage instanceof Image) {
+      console.error(`Element ${i} is not a valid image`)
+      return
+    }
+    let rotatedImage = rotateImage(currentImage, degrees)
+    outputArr[i] = rotatedImage
+  }
+  return outputArr
+}
+
 /**
  * @param {Image} imageIn - The input image.
  * @param {number} degrees - degrees to rotate.
@@ -176,7 +223,7 @@ export function rotateImage (imageIn, degrees) {
   // rotate the context
   ctx.rotate((degrees * Math.PI) / 180)
   // draw image to context
-  context.drawImage(imageIn, -imageIn.width / 2, -imageIn.width / 2)
+  ctx.drawImage(imageIn, -imageIn.width / 2, -imageIn.width / 2)
 
   ctx.restore()
 
@@ -233,6 +280,7 @@ export function cutSpriteSheet (spritesheet, cols, rows, width, height) {
       sprites.push(currImage)
     }
   }
+  //console.log(sprites instanceof Array)
   return sprites
 }
 
