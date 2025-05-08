@@ -6,6 +6,7 @@ const SPRITE_HEIGHT = 100
 const UNIT_LIFE = 120
 const SWOOSH_RATE_MS = 800
 const SWOOSH_SPEED = 2
+const CHANGE_IMAGE_EVERY = 5
 
 class Unit {
   constructor (worldX, worldY, kind) {
@@ -87,7 +88,7 @@ export class Swoosh {
         let screenX = element.worldX - this.game.cameraX
         let screenY = element.worldY - this.game.cameraY
         this.game.ctx.drawImage(
-          this.images[element.imageID],
+          this.images[element.imageID + element.frame],
           screenX,
           screenY,
           SPRITE_WIDTH,
@@ -106,6 +107,13 @@ export class Swoosh {
           element.life -= 1
         } else {
           element.active = false
+        }
+        if (element.life % CHANGE_IMAGE_EVERY == 0) {
+          if (element.frame < 7) {
+            element.frame += 1
+          } else {
+            element.frame = 0
+          }
         }
       }
     }

@@ -5,7 +5,7 @@ const SPRITE_WIDTH = 100
 const SPRITE_HEIGHT = 100
 const UNIT_LIFE = 120
 const SWOOSH_RATE_MS = 800
-const SWOOSH_SPEED = 2
+const ENTITY_SPEED = 2
 
 class Unit {
   constructor (worldX, worldY, kind) {
@@ -19,23 +19,23 @@ class Unit {
     this.velY = 0
     switch (this.kind) {
       case 0:
-        this.velY = -Swoosh.speed
+        this.velY = -Entity.speed
         break
       case 1:
-        this.velY = Swoosh.speed
+        this.velY = Entity.speed
         break
       case 2:
-        this.velX = -Swoosh.speed
+        this.velX = -Entity.speed
         break
       case 3:
-        this.velX = Swoosh.speed
+        this.velX = Entity.speed
         break
     }
   }
 }
 
 export class Entity {
-  static speed = SWOOSH_SPEED
+  static speed = ENTITY_SPEED
   static animateSpeed = 60
   constructor (game) {
     this.game = game
@@ -47,11 +47,13 @@ export class Entity {
 
   initImages () {
     let sheet = new Image()
-    sheet.src = './images/swoosh1m.png'
+    sheet.src = './images/bugsheet0.png'
     sheet.onload = () => {
       this.ready = true
-      this.images = Utils.cutSpriteSheet(sheet, 8, 1, 100, 100)
-      console.log('swoosh images loaded')
+      let imagesL = Utils.cutSpriteSheet(sheet, 4, 4, 150, 150)
+      let imagesR = Utils.applyFunctionToImageArray(imagesL, Utils.flipImageH)
+      this.images = imagesL.concat(imagesR)
+      console.log('enemy images loaded')
     }
   }
 

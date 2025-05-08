@@ -199,6 +199,35 @@ export function rotateImageArray (imageArray, degrees) {
 }
 
 /**
+ * @param {Array} imageArray - The input image array.
+ * @param {func} myFunc - degrees to rotate.
+ * @returns {Array} rotated image array.
+ */
+export function applyFunctionToImageArray (imageArray, myFunc) {
+  console.log(typeof imageArray)
+  if (!imageArray instanceof Array) {
+    console.error('rotateImageArray: imageArray invalid data')
+    return
+  }
+  if (!myFunc instanceof Function) {
+    console.error('rotateImageArray: func invalid data')
+    return
+  }
+  let length = imageArray.length
+  let outputArr = new Array(length)
+  for (let i = 0; i < length; i++) {
+    let currentImage = imageArray[i]
+    if (!currentImage instanceof Image) {
+      console.error(`Element ${i} is not a valid image`)
+      return
+    }
+    let rotatedImage = myFunc(currentImage)
+    outputArr[i] = rotatedImage
+  }
+  return outputArr
+}
+
+/**
  * @param {Image} imageIn - The input image.
  * @param {number} degrees - degrees to rotate.
  * @returns {Image} rotated image.
@@ -240,6 +269,40 @@ export function getUnusedHTMLElementID () {
     i += 1
   }
   return i
+}
+
+/**
+ * @param {Image} imageIn - The input image.
+ * @returns {Image} rotated image.
+ */
+export function flipImageH (imageIn) {
+  if (imageIn.complete == false) {
+    throw new Error("  the input image wasn't loaded yet")
+  }
+  const canvas = document.createElement('canvas')
+  document.body.appendChild(canvas)
+  canvas.id = getUnusedHTMLElementID()
+  canvas.width = imageIn.width
+  canvas.height = imageIn.height
+
+  let ctx = canvas.getContext('2d')
+
+  ctx.clearRect(0, 0, canvas.width, canvas.height)
+  //save rotation state of canvas
+  ctx.save()
+  // shift context right
+  //ctx.translate(imageIn.width, 0)
+  ctx.scale(-1, 1)
+  // draw image to context
+  ctx.drawImage(imageIn, 0, 0)
+
+  ctx.restore()
+
+  /** @type {Image} */
+  let imageNew = canvasToImage(canvas)
+
+  document.body.removeChild(canvas)
+  return imageNew
 }
 
 export function cutSpriteSheet1 (spritesheet, cols, rows, width, height) {
@@ -353,6 +416,22 @@ export function createMillisecondPacer (millisecondPeriod) {
       lastTime = now
       return true
     } else {
+      return false
+    }
+  }
+  return inner
+}
+
+export function createTickPacer (tickPeriod) {
+  // true when rate limit elapsed
+  const period = tickPeriod
+  let tickCount = 0
+  let inner = () => {
+    if (tickCount > period) {
+      tickCount = 0
+      return true
+    } else {
+      tickCount += 1
       return false
     }
   }

@@ -18,6 +18,8 @@ export class Tilegrid {
   constructor (game) {
     this.ready = false
     this.game = game
+    this.tilesX = tilesX
+    this.tilesY = tilesY
     //this.cameraSpeed = this.player.speed
     this.images = Array(amountOfPictures).fill(null)
     this.tileSize = this.game.tileSize

@@ -5,6 +5,8 @@ import { Editor } from './editor.js'
 import { Collision } from './collision.js'
 import { Hud } from './hud.js'
 import { Swoosh } from './swoosh.js'
+import { Entity } from './entity.js'
+import { Pathfind } from './pathfind.js'
 import * as Utils from './utils.js'
 ;('use strict')
 
@@ -29,7 +31,9 @@ export const game = {
   tilegrid: null,
   editor: null,
   input: null,
+  entity: null,
   swoosh: null,
+  pathfind: null,
   collision: null,
   ctx: null,
   boardWidth: null,
@@ -99,6 +103,8 @@ window.onload = function () {
   game.tilegrid = new Tilegrid(game)
   game.swoosh = new Swoosh(game)
   game.editor = new Editor(game)
+  game.entity = new Entity(game)
+  game.pathfind = new Pathfind(game)
   game.hud = new Hud(game)
   game.boardWidth = boardWidth
   game.boardHeight = boardHeight
@@ -124,6 +130,8 @@ function update () {
   game.player.update()
   game.tilegrid.update()
   game.swoosh.update()
+  game.entity.update()
+  game.pathfind.update()
   game.input.update()
 }
 
@@ -164,6 +172,8 @@ function draw () {
   game.tilegrid.draw()
   game.swoosh.draw()
   game.player.draw()
+  game.pathfind.draw()
+  game.entity.draw()
 }
 
 const detectCollision = (a, b) => {

@@ -143,6 +143,10 @@ export class Player {
       this.game.swoosh.addUnit(this.worldX, this.worldY, this.swooshDirection())
     }
 
+    if (keys['e'] == true) {
+      this.game.entity.addUnit(this.worldX, this.worldY, this.swooshDirection())
+    }
+
     if (up && !down && !collSides[0]) {
       this.velY = -this.speed
       this.direction = 'u'
