@@ -3,12 +3,15 @@ import { Tilegrid } from './tilegrid.js'
 import { Input } from './input.js'
 import { Editor } from './editor.js'
 import { Collision } from './collision.js'
+import { Hud } from './hud.js'
+import { Swoosh } from './swoosh.js'
 import * as Utils from './utils.js'
 ;('use strict')
 
 const msPerTick = 60 / 1000
 const tileSize = 10
 export const TILESIZE = 100
+const NO_SCROLL = true
 
 /*
 
@@ -22,9 +25,11 @@ export const game = {
   cameraY: 0,
   tileSize: TILESIZE,
   player: null,
+  hud: null,
   tilegrid: null,
   editor: null,
   input: null,
+  swoosh: null,
   collision: null,
   ctx: null,
   boardWidth: null,
@@ -78,6 +83,11 @@ let bird = {
 
 window.onload = function () {
   board = document.getElementById('board')
+  // disable scrollbar
+  const [body] = document.getElementsByTagName('body')
+  if (NO_SCROLL) {
+    body.setAttribute('style', 'overflow:hidden')
+  }
   game.board = board
   board.height = boardHeight
   board.width = boardWidth
@@ -87,7 +97,9 @@ window.onload = function () {
   game.input = new Input(game)
   game.collision = new Collision(game)
   game.tilegrid = new Tilegrid(game)
+  game.swoosh = new Swoosh(game)
   game.editor = new Editor(game)
+  game.hud = new Hud(game)
   game.boardWidth = boardWidth
   game.boardHeight = boardHeight
 
@@ -111,6 +123,7 @@ function moveBird (e) {
 function update () {
   game.player.update()
   game.tilegrid.update()
+  game.swoosh.update()
   game.input.update()
 }
 
@@ -149,6 +162,7 @@ function draw () {
 
   context.clearRect(0, 0, board.width, board.height) // clear previous frame
   game.tilegrid.draw()
+  game.swoosh.draw()
   game.player.draw()
 }
 

@@ -4,7 +4,7 @@ const tilesX = 20
 const tilesY = 20
 const tileDrawDist = 6
 //const tileSize = 100
-const cameraSpeed = 4
+const CAMERA_SPEED = 4
 const amountOfPictures = 32
 
 const DEFAULT_GROUND = 0
@@ -18,7 +18,7 @@ export class Tilegrid {
   constructor (game) {
     this.ready = false
     this.game = game
-
+    //this.cameraSpeed = this.player.speed
     this.images = Array(amountOfPictures).fill(null)
     this.tileSize = this.game.tileSize
 
@@ -141,6 +141,7 @@ export class Tilegrid {
 
   adjustCamera () {
     let cb = this.cameraBounds
+    let cameraSpeed = this.game.player.speed
 
     if (this.game.player.screenX < cb.startX) {
       this.game.cameraX -= cameraSpeed
@@ -185,7 +186,7 @@ export class Tilegrid {
   }
 
   isTileSolid (gridX, gridY) {
-    debugger
+    //debugger
     if (gridX < 0 || gridX >= tilesX || gridY < 0 || gridY >= tilesY) {
       return true
     }
