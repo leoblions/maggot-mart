@@ -11,10 +11,11 @@ const DEFAULT_GROUND = 0
 const OOB_TILE_KIND = 0
 const DEFAULT_LEVEL_DATA_URL = '/data/level0.txt'
 const LOAD_DEFAULT_LEVEL = true
+const TILE_TYPE_AMOUNT = 32
 
 export class Tilegrid {
   static grid = null
-  static solidArr = []
+  static solidArr = new Array(TILE_TYPE_AMOUNT).fill(false).map((v,i)=>{ return i>15?true:false})
   constructor (game) {
     this.ready = false
     this.game = game
@@ -23,7 +24,7 @@ export class Tilegrid {
     //this.cameraSpeed = this.player.speed
     this.images = Array(amountOfPictures).fill(null)
     this.tileSize = this.game.tileSize
-
+    console.log(Tilegrid.solidArr)
     this.bounds = {
       startX: 0,
       startY: 0,

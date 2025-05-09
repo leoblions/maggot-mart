@@ -233,6 +233,7 @@ export function applyFunctionToImageArray (imageArray, myFunc) {
  * @returns {Image} rotated image.
  */
 export function rotateImage (imageIn, degrees) {
+  //console.log(imageIn.complete)
   if (imageIn.complete == false) {
     throw new Error("rotateImage the input image wasn't loaded yet")
   }
