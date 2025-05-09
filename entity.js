@@ -7,30 +7,19 @@ const UNIT_LIFE = 120
 const SWOOSH_RATE_MS = 800
 const ENTITY_SPEED = 2
 
+
 class Unit {
   constructor (worldX, worldY, kind) {
     this.kind = kind // 0 up / 1 down / 2 left / 3 right
     this.worldX = worldX
     this.worldY = worldY
     this.active = true
+    this.speed = Entity.speed
     this.imageID = 0
     this.life = UNIT_LIFE
     this.velX = 0
     this.velY = 0
-    switch (this.kind) {
-      case 0:
-        this.velY = -Entity.speed
-        break
-      case 1:
-        this.velY = Entity.speed
-        break
-      case 2:
-        this.velX = -Entity.speed
-        break
-      case 3:
-        this.velX = Entity.speed
-        break
-    }
+    
   }
 }
 
@@ -89,16 +78,43 @@ export class Entity {
     }
   }
 
+  setVelocity(unit){
+    
+    let direction = this.game.pathfind.getDirectionTowardsPlayer(unit.worldX,unit.worldY)
+    debugger
+    switch(direction){
+      case 'N':
+        break
+      case 'U':
+        unit.velY = -Entity.speed
+        break
+      case 'D':
+        unit.velY = Entity.speed
+        break
+      case 'L':
+        unit.velX = -Entity.speed
+        break
+      case 'R':
+        unit.velX = Entity.speed
+        break
+      default:
+        unit.velX = 0
+        unit.velY = 0
+
+    }
+  }
+
   update () {
     for (let element of this.units) {
       if (element instanceof Unit && element.active) {
+        this.setVelocity(element)
         element.worldX += element.velX
         element.worldY += element.velY
-        if (element.life > 0) {
-          element.life -= 1
-        } else {
-          element.active = false
-        }
+        // if (element.life > 0) {
+        //   element.life -= 1
+        // } else {
+        //   element.active = false
+        // }
       }
     }
   }

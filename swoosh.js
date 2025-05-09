@@ -66,6 +66,22 @@ export class Swoosh {
     }
   }
 
+  initImages0 () {
+    let sheet = new Image()
+    sheet.src = './images/swoosh1m.png'
+    sheet.onload = () => {
+      this.ready = true
+      //up
+      let imagesOrig = Utils.cutSpriteSheet(sheet, 8, 1, 100, 100)
+      //down
+      let imagesD = Utils.rotateImageArray(imagesOrig, 180)
+      let imagesL = Utils.rotateImageArray(imagesOrig, 270)
+      let imagesR = Utils.rotateImageArray(imagesOrig, 90)
+      this.images = imagesOrig.concat(imagesD, imagesL, imagesR)
+      console.log('swoosh images loaded')
+    }
+  }
+
   addUnit (worldX, worldY, kind) {
     for (let i = 0; i < MAX_UNITS; i++) {
       let element = this.units[i]

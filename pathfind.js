@@ -1,15 +1,17 @@
 import * as Utils from './utils.js'
 import { Tilegrid } from './tilegrid.js'
 
-const PF_GRID_PASSES = 15
+const PF_GRID_PASSES = 6
 const GRID_UPDATE_PERIOD = 800
 const TARGET_OFFSET_X = 30
 const TARGET_OFFSET_Y = 30
-const DRAW_WALL_GRID = true
+const DRAW_WALL_GRID = false
 const DRAW_PF_NUMBERS = true
 const SUPPRESS_OOBE = true
 var tsize
 const SCREEN_TILES = 10 // divide the screen into 10x10
+const PLAYER_CELL_START_VALUE = 5
+const STEP = 1
 /*
 First pass zeroes value grid
 Iterator counts down from pass amount
@@ -184,36 +186,35 @@ export class Pathfind {
   }
 
   getDirectionTowardsPlayer (worldX, worldY) {
-    let screenX = worldX - this.game.cameraX
-    let screenY = worldY - this.game.cameraY
-    let screenGX = Math.floor(screenX / tsize)
-    let screenGY = Math.floor(screenY / tsize)
+  
+    let gridX = Math.floor(worldX / tsize)
+    let gridY = Math.floor(worldY / tsize)
     let L, R, U, D, max
     max = 0
     let dir = 'N'
     try {
-      L = valueGrid[screenGY][screenGX - 1]
+      L = this.valueGrid[gridY][gridX - 1]
       if (L > max) {
         max = L
         dir = 'L'
       }
     } catch (Exception) {}
     try {
-      R = valueGrid[screenGY][screenGX + 1]
+      R = this.valueGrid[gridY][gridX + 1]
       if (R > max) {
         max = R
         dir = 'R'
       }
     } catch (Exception) {}
     try {
-      U = valueGrid[screenGY - 1][screenGX]
+      U = this.valueGrid[gridY - 1][gridX]
       if (U > max) {
         max = U
         dir = 'U'
       }
     } catch (Exception) {}
     try {
-      D = valueGrid[screenGY + 1][screenGX]
+      D = this.valueGrid[gridY + 1][gridX]
       if (D > max) {
         max = D
         dir = 'D'
@@ -224,25 +225,31 @@ export class Pathfind {
   }
 
   updateValueGrid () {
+    // reset grids
     this.checkGrid = this.blankGrid(this.cols, this.rows, false)
     this.valueGrid = this.blankGrid(this.cols, this.rows, 0)
-    let pgX = Math.floor((this.game.player.screenX + TARGET_OFFSET_X) / tsize)
-    let pgY = Math.floor((this.game.player.screenY + TARGET_OFFSET_Y) / tsize)
+    // location of player on grid
+    let playerGridX = Math.floor((this.game.player.worldX + TARGET_OFFSET_X) / tsize)
+    let playerGridY = Math.floor((this.game.player.worldY + TARGET_OFFSET_Y) / tsize)
     try {
-      this.checkGrid[pgY][pgX] = true
-      this.valueGrid[pgY][pgX] = 5
+      // mark the player position
+      this.checkGrid[playerGridY][playerGridX] = true
+      this.valueGrid[playerGridY][playerGridX] = PLAYER_CELL_START_VALUE
     } catch (error) {}
-
+    let amountToAdd = PF_GRID_PASSES +1
     for (let i = 0; i < PF_GRID_PASSES; i++) {
-      this.updateValueGridPass(i)
+      // update grids several passes
+      this.updateValueGridPass(amountToAdd)
+      amountToAdd-=STEP
     }
   }
 
   updateValueGridPass (amountToAdd) {
+    //debugger
     // update check grid
     for (let y = 0; y < this.rows; y++) {
       for (let x = 0; x < this.cols; x++) {
-        if (!this.wallGrid[y][x] && this.valueGrid[y][x] > 0) {
+        if (!this.game.tilegrid.tileSolid(x,y) && this.valueGrid[y][x] > 0) {
           this.checkGrid[y][x] = true
         }
       }
@@ -250,8 +257,8 @@ export class Pathfind {
     // update pfGrid
     for (let y = 0; y < this.rows; y++) {
       for (let x = 0; x < this.cols; x++) {
-        let tileIsWall = this.wallGrid[y][x]
-        if (tileIsWall) {
+        let solid = this.game.tilegrid.tileSolid(x,y)
+        if (solid) {
           continue // don't mark walls
         } else {
           if (this.cellHasMarkedNeighbor(this.checkGrid, x, y)) {
@@ -290,11 +297,11 @@ export class Pathfind {
             let w = tsize - 1
             let h = tsize - 1
 
-            let boxX = x * tsize
-            let boxY = y * tsize
+            let screenX = (x * tsize) + this.halfSquare - this.game.cameraX
+            let screenY = (y * tsize) + this.halfSquare - this.game.cameraY
             //let alpha = this.valueGrid[y][x]
             this.game.ctx.fillStyle = `rgba(100, 100, 0, 0.5)`
-            this.game.ctx.fillText( this.valueGrid[y][x] , boxX, boxY)
+            this.game.ctx.fillText( this.valueGrid[y][x] , screenX, screenY)
             
             //this.game.ctx.fillRect(boxX, boxY, w, h)
           }
@@ -308,7 +315,7 @@ export class Pathfind {
       return
     }
     if (this.updatePacer()){
-      this.updateSolidTileGrid ()
+      //this.updateSolidTileGrid ()
       this.updateValueGrid()
       //console.log("UPDATE PF GRID")
     }

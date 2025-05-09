@@ -61,6 +61,19 @@ export class Tilegrid {
     this.adjustBounds()
   }
 
+  tileSolid(tileX,tileY){
+    // return true if solid
+    //debugger
+    try{
+      let kind = Tilegrid.grid[tileY][tileX]
+      let solid = Tilegrid.solidArr[kind]
+      return solid
+    }catch(error){
+      // treat as solid if out of bounds
+      return true
+    }
+  }
+
   setCameraBounds () {
     let height = this.game.board.height
     let width = this.game.board.width
