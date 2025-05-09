@@ -50,18 +50,33 @@ export class Swoosh {
     this.initImages()
   }
 
-  initImages () {
+  async initImages () {
     let sheet = new Image()
     sheet.src = './images/swoosh1m.png'
     sheet.onload = () => {
       this.ready = true
-      //up
-      let imagesOrig = Utils.cutSpriteSheet(sheet, 8, 1, 100, 100)
-      //down
-      let imagesD = Utils.rotateImageArray(imagesOrig, 180)
-      let imagesL = Utils.rotateImageArray(imagesOrig, 270)
-      let imagesR = Utils.rotateImageArray(imagesOrig, 90)
-      this.images = imagesOrig.concat(imagesD, imagesL, imagesR)
+      let imagesU, imagesD, imagesL, imagesR
+      //promises
+      const getUp = () => {
+        imagesU = Utils.cutSpriteSheet(sheet, 8, 1, 100, 100)
+        return Promise.resolve(null)
+      }
+      const getDown = () => {
+        imagesD = Utils.rotateImageArray(imagesU, 180)
+        return Promise.resolve(null)
+      }
+      const getLeft = () => {
+        imagesL = Utils.rotateImageArray(imagesU, 270)
+        return Promise.resolve(null)
+      }
+      const getRight = () => {
+        imagesR = Utils.rotateImageArray(imagesU, 90)
+        return Promise.resolve(null)
+      }
+      //invoke promise chain to ensure they are run in order
+      getUp().then(getDown().then(getLeft().then(getRight())))
+
+      this.images = imagesU.concat(imagesD, imagesL, imagesR)
       console.log('swoosh images loaded')
     }
   }

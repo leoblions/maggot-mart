@@ -3,8 +3,8 @@ const alphabet = 'abcdefghijklmnopqrstuvwxyz1234567890. '
 let revetment = {}
 const LETTER_SIZE = 18
 const FAIL_INDEX = 39
-const SPRITE_WIDTH = 10
-const SPRITE_HEIGHT = 10
+const SPRITE_WIDTH = 18
+const SPRITE_HEIGHT = 18
 
 class Unit {
   constructor (screenX, screenY, content) {
@@ -35,7 +35,7 @@ export class Rastertext {
   }
   initImages () {
     let sheet = new Image()
-    sheet.src = './images/font50hor.png'
+    sheet.src = './images/font50horOL.png'
     sheet.onload = () => {
       this.ready = true
       let font1 = Utils.cutSpriteSheet(sheet, 40, 1, 50, 50)
@@ -48,7 +48,6 @@ export class Rastertext {
   addUnit (screenX, screenY, content) {
     let unit = new Unit(screenX, screenY, content)
     this.units.push(unit)
-    console.log('rt added unit')
     return unit
   }
 
@@ -72,7 +71,6 @@ export class Rastertext {
     }
     for (const unit of this.units) {
       if (unit != null && unit instanceof Unit) {
-        console.log('rt add unit')
         this.drawUnit(unit)
       }
     }

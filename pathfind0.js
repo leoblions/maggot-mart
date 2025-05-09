@@ -28,6 +28,7 @@ enemies will not move if all quares have zero value
 
 */
 
+
 export class Pathfind {
   constructor (game) {
     this.game = game
@@ -42,11 +43,12 @@ export class Pathfind {
     this.updateWallGrid()
     //screen coord space
     this.screenSolidGrid = this.blankGrid(SCREEN_TILES, SCREEN_TILES, false)
-
+    
     this.valueGrid = this.blankGrid(this.cols, this.rows, 0)
     this.updatePacer = Utils.createMillisecondPacer(GRID_UPDATE_PERIOD)
     this.screenTileWidth = Math.floor(this.game.board.width / SCREEN_TILES)
     this.screenTileHeight = Math.floor(this.game.board.height / SCREEN_TILES)
+    
   }
 
   blankGrid (cols, rows, fillvalue) {
@@ -104,10 +106,10 @@ export class Pathfind {
         //debugger
         if (solid) {
           this.wallGrid[y][x] = true
-          wc += 1
+          wc+=1
         } else {
           this.wallGrid[y][x] = false
-          fc += 1
+          fc+=1
         }
       }
     }
@@ -115,9 +117,9 @@ export class Pathfind {
     //debugger
   }
 
-  screenPointSolid (screenX, screenY) {
-    let gridX = Math.floor((screenX + this.game.cameraX) / this.game.tileSize)
-    let gridY = Math.floor((screenY + this.game.cameraY) / this.game.tileSize)
+  screenPointSolid(screenX,screenY){
+    let gridX = Math.floor((screenX+this.game.cameraX)/this.game.tileSize)
+    let gridY = Math.floor((screenY+this.game.cameraY)/this.game.tileSize)
     //debugger
     try {
       //solid = this.wallGrid[gridY][gridX]
@@ -127,10 +129,11 @@ export class Pathfind {
       // solid if out of bounds
       return true
     }
+
   }
 
   updateSolidTileGrid () {
-    // run repeatedly
+    // run repeatedly 
     // which areas on screen are solid
     // screen divided into squares, smaller area than wallgrid
     // true is wall, false is walkable
@@ -138,21 +141,21 @@ export class Pathfind {
     let fc = 0
     for (let y = 0; y < SCREEN_TILES; y++) {
       for (let x = 0; x < SCREEN_TILES; x++) {
-        let screenX = this.screenTileWidth * x
-        let screenY = this.screenTileHeight * y
+        let screenX = this.screenTileWidth*x
+        let screenY = this.screenTileHeight*y
         //debugger
-        let solid = this.screenPointSolid(screenX + 20, screenY + 20)
+        let solid = this.screenPointSolid (screenX+20, screenY+20)
         //debugger
         if (solid) {
           this.screenSolidGrid[y][x] = true
-          wc += 1
+          wc+=1
         } else {
           this.screenSolidGrid[y][x] = false
-          fc += 1
+          fc+=1
         }
       }
     }
-    console.log('Wall cells ' + wc)
+    console.log("Wall cells "+wc)
     //debugger
   }
 
@@ -173,21 +176,6 @@ export class Pathfind {
     }
   }
 
-  cellMarkedNeighborScore (grid, gridX, gridY) {
-    let score = 0
-    const DIAG = 1
-    const ADJACENT = 2
-    score += this.cellExistsAndGTOne(grid, gridX - 1, gridY - 1) ? DIAG : 0
-    score += this.cellExistsAndGTOne(grid, gridX - 1, gridY) ? ADJACENT : 0
-    score += this.cellExistsAndGTOne(grid, gridX - 1, gridY + 1) ? DIAG : 0
-    score += this.cellExistsAndGTOne(grid, gridX, gridY - 1) ? ADJACENT : 0
-    score += this.cellExistsAndGTOne(grid, gridX, gridY + 1) ? ADJACENT : 0
-    score += this.cellExistsAndGTOne(grid, gridX + 1, gridY - 1) ? DIAG : 0
-    score += this.cellExistsAndGTOne(grid, gridX + 1, gridY) ? ADJACENT : 0
-    score += this.cellExistsAndGTOne(grid, gridX + 1, gridY + 1) ? DIAG : 0
-    return score
-  }
-
   cellExistsAndGTOne (grid, gridX, gridY) {
     try {
       let cellValue = grid[gridY][gridX]
@@ -198,6 +186,7 @@ export class Pathfind {
   }
 
   getDirectionTowardsPlayer (worldX, worldY) {
+  
     let gridX = Math.floor(worldX / tsize)
     let gridY = Math.floor(worldY / tsize)
     let L, R, U, D, max
@@ -240,22 +229,18 @@ export class Pathfind {
     this.checkGrid = this.blankGrid(this.cols, this.rows, false)
     this.valueGrid = this.blankGrid(this.cols, this.rows, 0)
     // location of player on grid
-    let playerGridX = Math.floor(
-      (this.game.player.worldX + TARGET_OFFSET_X) / tsize
-    )
-    let playerGridY = Math.floor(
-      (this.game.player.worldY + TARGET_OFFSET_Y) / tsize
-    )
+    let playerGridX = Math.floor((this.game.player.worldX + TARGET_OFFSET_X) / tsize)
+    let playerGridY = Math.floor((this.game.player.worldY + TARGET_OFFSET_Y) / tsize)
     try {
       // mark the player position
       this.checkGrid[playerGridY][playerGridX] = true
       this.valueGrid[playerGridY][playerGridX] = PLAYER_CELL_START_VALUE
     } catch (error) {}
-    let amountToAdd = PF_GRID_PASSES + 1
+    let amountToAdd = PF_GRID_PASSES +1
     for (let i = 0; i < PF_GRID_PASSES; i++) {
       // update grids several passes
       this.updateValueGridPass(amountToAdd)
-      amountToAdd -= STEP
+      amountToAdd-=STEP
     }
   }
 
@@ -264,7 +249,7 @@ export class Pathfind {
     // update check grid
     for (let y = 0; y < this.rows; y++) {
       for (let x = 0; x < this.cols; x++) {
-        if (!this.game.tilegrid.tileSolid(x, y) && this.valueGrid[y][x] > 0) {
+        if (!this.game.tilegrid.tileSolid(x,y) && this.valueGrid[y][x] > 0) {
           this.checkGrid[y][x] = true
         }
       }
@@ -272,13 +257,12 @@ export class Pathfind {
     // update pfGrid
     for (let y = 0; y < this.rows; y++) {
       for (let x = 0; x < this.cols; x++) {
-        let solid = this.game.tilegrid.tileSolid(x, y)
+        let solid = this.game.tilegrid.tileSolid(x,y)
         if (solid) {
           continue // don't mark walls
         } else {
-          let neighborScore = this.cellMarkedNeighborScore(this.checkGrid, x, y)
-          if (neighborScore > 0) {
-            this.valueGrid[y][x] += amountToAdd + neighborScore
+          if (this.cellHasMarkedNeighbor(this.checkGrid, x, y)) {
+            this.valueGrid[y][x] += amountToAdd
           }
         }
       }
@@ -287,6 +271,7 @@ export class Pathfind {
 
   draw () {
     if (DRAW_WALL_GRID) {
+      
       for (let y = 0; y < SCREEN_TILES; y++) {
         for (let x = 0; x < SCREEN_TILES; x++) {
           //debugger
@@ -312,12 +297,12 @@ export class Pathfind {
             let w = tsize - 1
             let h = tsize - 1
 
-            let screenX = x * tsize + this.halfSquare - this.game.cameraX
-            let screenY = y * tsize + this.halfSquare - this.game.cameraY
+            let screenX = (x * tsize) + this.halfSquare - this.game.cameraX
+            let screenY = (y * tsize) + this.halfSquare - this.game.cameraY
             //let alpha = this.valueGrid[y][x]
             this.game.ctx.fillStyle = `rgba(100, 100, 0, 0.5)`
-            this.game.ctx.fillText(this.valueGrid[y][x], screenX, screenY)
-
+            this.game.ctx.fillText( this.valueGrid[y][x] , screenX, screenY)
+            
             //this.game.ctx.fillRect(boxX, boxY, w, h)
           }
         }
@@ -329,12 +314,13 @@ export class Pathfind {
     if (Tilegrid?.grid == null) {
       return
     }
-    if (this.updatePacer()) {
+    if (this.updatePacer()){
       //this.updateSolidTileGrid ()
       this.updateValueGrid()
       //console.log("UPDATE PF GRID")
     }
 
     //this.updateWallGrid()
+    
   }
 }

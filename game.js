@@ -75,7 +75,7 @@ window.onload = function () {
   game.editor = new Editor(game)
   game.entity = new Entity(game)
   game.rastertext = new Rastertext(game)
-  game.rastertext.addUnit(5, 200, 'AAAAHH')
+  game.rastertext.addUnit(200, 15, 'AAAAHH')
   game.pathfind = new Pathfind(game)
   game.hud = new Hud(game)
   game.boardWidth = boardWidth

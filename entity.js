@@ -6,7 +6,7 @@ const SPRITE_HEIGHT = 100
 const UNIT_LIFE = 120
 const SWOOSH_RATE_MS = 800
 const ENTITY_SPEED = 2
-
+const CHANGE_DIRECTION_PERIOD = 100
 
 class Unit {
   constructor (worldX, worldY, kind) {
@@ -19,7 +19,6 @@ class Unit {
     this.life = UNIT_LIFE
     this.velX = 0
     this.velY = 0
-    
   }
 }
 
@@ -28,9 +27,14 @@ export class Entity {
   static animateSpeed = 60
   constructor (game) {
     this.game = game
+    this.worldXMax = this.game.tileSize * this.game.tilegrid.tilesX
+    this.worldYMax = this.game.tileSize * this.game.tilegrid.tilesY
     this.imageSets = null
     this.units = new Array(MAX_UNITS)
     this.swooshPacer = Utils.createMillisecondPacer(SWOOSH_RATE_MS)
+    this.changeDirectionPacer = Utils.createMillisecondPacer(
+      CHANGE_DIRECTION_PERIOD
+    )
     this.initImages()
   }
 
@@ -50,11 +54,8 @@ export class Entity {
     for (let i = 0; i < MAX_UNITS; i++) {
       let element = this.units[i]
       if (!(element instanceof Unit) || !element.active) {
-        if (this.swooshPacer()) {
-          this.units[i] = new Unit(worldX, worldY, kind)
-          //console.log('added unit')
-          break
-        }
+        this.units[i] = new Unit(worldX, worldY, kind)
+        console.log('add unit to ' + i)
       }
     }
   }
@@ -78,29 +79,39 @@ export class Entity {
     }
   }
 
-  setVelocity(unit){
-    
-    let direction = this.game.pathfind.getDirectionTowardsPlayer(unit.worldX,unit.worldY)
-    debugger
-    switch(direction){
-      case 'N':
-        break
-      case 'U':
-        unit.velY = -Entity.speed
-        break
-      case 'D':
-        unit.velY = Entity.speed
-        break
-      case 'L':
-        unit.velX = -Entity.speed
-        break
-      case 'R':
-        unit.velX = Entity.speed
-        break
-      default:
-        unit.velX = 0
-        unit.velY = 0
-
+  setVelocity (unit) {
+    let direction = this.game.pathfind.getDirectionTowardsPlayer(
+      unit.worldX,
+      unit.worldY
+    )
+    if (this.changeDirectionPacer()) {
+      switch (direction) {
+        case 'N':
+          break
+        case 'U':
+          unit.velY = -Entity.speed
+          break
+        case 'D':
+          unit.velY = Entity.speed
+          break
+        case 'L':
+          unit.velX = -Entity.speed
+          break
+        case 'R':
+          unit.velX = Entity.speed
+          break
+        default:
+          unit.velX = 0
+          unit.velY = 0
+      }
+      // let testX = element.worldX + element.velX
+      // let testY = element.worldY + element.velY
+      // if (testX > this.worldXMax || testX < 0) {
+      //   this.velX = 0
+      // }
+      // if (testY > this.worldYMax || testY < 0) {
+      //   this.velY = 0
+      // }
     }
   }
 
@@ -110,11 +121,6 @@ export class Entity {
         this.setVelocity(element)
         element.worldX += element.velX
         element.worldY += element.velY
-        // if (element.life > 0) {
-        //   element.life -= 1
-        // } else {
-        //   element.active = false
-        // }
       }
     }
   }

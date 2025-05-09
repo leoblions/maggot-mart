@@ -306,7 +306,7 @@ export function flipImageH (imageIn) {
   return imageNew
 }
 
-export function cutSpriteSheet1 (spritesheet, cols, rows, width, height) {
+export function cutSpriteSheetX (spritesheet, cols, rows, width, height) {
   let sprites = new Array(rows * cols)
   let subscript = 0
   for (let y = 0; y < cols; y++) {
@@ -346,6 +346,20 @@ export function cutSpriteSheet (spritesheet, cols, rows, width, height) {
   }
   //console.log(sprites instanceof Array)
   return sprites
+}
+
+export async function cutSpriteSheetPR (spritesheet, cols, rows, width, height) {
+  let sprites = []
+  for (let y = 0; y < rows; y++) {
+    for (let x = 0; x < cols; x++) {
+      let startX = x * width
+      let startY = y * height
+      let currImage = getSubImage0(spritesheet, startX, startY, width, height)
+      sprites.push(currImage)
+    }
+  }
+  //console.log(sprites instanceof Array)
+  return Promise.resolve(sprites)
 }
 
 export function clamp (min, max, test) {
