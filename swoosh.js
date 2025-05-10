@@ -57,27 +57,17 @@ export class Swoosh {
       this.ready = true
       let imagesU, imagesD, imagesL, imagesR
       //promises
-      const getUp = () => {
-        imagesU = Utils.cutSpriteSheet(sheet, 8, 1, 100, 100)
-        return Promise.resolve(null)
-      }
-      const getDown = () => {
+      Utils.cutSpriteSheetCallback(sheet, 8, 1, 100, 100,(output)=>{
+        imagesU=output
         imagesD = Utils.rotateImageArray(imagesU, 180)
-        return Promise.resolve(null)
-      }
-      const getLeft = () => {
         imagesL = Utils.rotateImageArray(imagesU, 270)
-        return Promise.resolve(null)
-      }
-      const getRight = () => {
         imagesR = Utils.rotateImageArray(imagesU, 90)
-        return Promise.resolve(null)
-      }
-      //invoke promise chain to ensure they are run in order
-      getUp().then(getDown().then(getLeft().then(getRight())))
-
-      this.images = imagesU.concat(imagesD, imagesL, imagesR)
+        this.images = imagesU.concat(imagesD, imagesL, imagesR)
       console.log('swoosh images loaded')
+      })
+      
+
+      
     }
   }
 
@@ -118,6 +108,10 @@ export class Swoosh {
       if (element instanceof Unit && element.active) {
         let screenX = element.worldX - this.game.cameraX
         let screenY = element.worldY - this.game.cameraY
+        let image = this.images[element.imageID + element.frame]
+        if (image==null){
+          return
+        }
         this.game.ctx.drawImage(
           this.images[element.imageID + element.frame],
           screenX,

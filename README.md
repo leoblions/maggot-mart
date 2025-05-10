@@ -20,3 +20,5 @@ Collect the merchandise from the loading dock and place it according to the plan
 # Technical
 
 Simple Javascript browser game I plan to rebuild in electron framework later.
+
+To play it, open the project folder in VS Code with the Live Server extension installed. Then click Go Live in the bottom right corner to open it in your browser.

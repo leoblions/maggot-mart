@@ -348,6 +348,33 @@ export function cutSpriteSheet (spritesheet, cols, rows, width, height) {
   return sprites
 }
 
+/**
+ * Cuts a sprite sheet into equal size rectangle images. It puts them into an array, then passes the array to the callback
+ * @param {Image} spritesheet is original larger image
+ * @param {number} cols number of segments in x direction
+ * @param {number} rows number of segments in y direction
+ * @param {number} width size of output sprites in x direction
+ * @param {number} height size of output sprites in y direction
+ * @param {function} callback function to call at end of this function, with array of sprites as argument
+ * 
+ * @returns {Number} Returns the value of x for the equation.
+ */
+export function cutSpriteSheetCallback (spritesheet, cols, rows, width, height, callback) {
+  let sprites = []
+  for (let y = 0; y < rows; y++) {
+    for (let x = 0; x < cols; x++) {
+      let startX = x * width
+      let startY = y * height
+      let currImage = getSubImage0(spritesheet, startX, startY, width, height)
+      sprites.push(currImage)
+    }
+  }
+  //console.log(sprites instanceof Array)
+  
+  callback(sprites)
+ 
+}
+
 export async function cutSpriteSheetPR (spritesheet, cols, rows, width, height) {
   let sprites = []
   for (let y = 0; y < rows; y++) {

@@ -8,9 +8,11 @@ const TARGET_OFFSET_Y = 30
 const DRAW_WALL_GRID = false
 const DRAW_PF_NUMBERS = true
 const SUPPRESS_OOBE = true
-var tsize
+const PLAYER_SQUARE_VALUE_BOOST = 10
+var tileSize
+var halfTile
 const SCREEN_TILES = 10 // divide the screen into 10x10
-const PLAYER_CELL_START_VALUE = 5
+const PLAYER_CELL_START_VALUE = 30
 const STEP = 1
 /*
 First pass zeroes value grid
@@ -34,15 +36,17 @@ export class Pathfind {
     this.cols = this.game.tilegrid.tilesX
     this.rows = this.game.tilegrid.tilesY
     //debugger
-    tsize = this.game.tilegrid.tileSize
-    this.halfSquare = Math.floor(tsize / 2)
+    tileSize = this.game.tilegrid.tileSize
+    halfTile = Math.floor(tileSize / 2)
+    this.halfSquare = Math.floor(tileSize / 2)
     this.checkGrid = this.blankGrid(this.cols, this.rows, false)
     //world grid coord space
     this.wallGrid = this.blankGrid(this.cols, this.rows, false)
     this.updateWallGrid()
     //screen coord space
     this.screenSolidGrid = this.blankGrid(SCREEN_TILES, SCREEN_TILES, false)
-
+    this.playerGridX=undefined
+    this.playerGridY=undefined
     this.valueGrid = this.blankGrid(this.cols, this.rows, 0)
     this.updatePacer = Utils.createMillisecondPacer(GRID_UPDATE_PERIOD)
     this.screenTileWidth = Math.floor(this.game.board.width / SCREEN_TILES)
@@ -62,8 +66,8 @@ export class Pathfind {
   }
 
   screenGridPositionIsSolid (sgridX, sgridY) {
-    let soffsetGridX = Math.floor((this.game.cameraX + this.halfSquare) / tsize)
-    let soffsetGridY = Math.floor((this.game.cameraY + this.halfSquare) / tsize)
+    let soffsetGridX = Math.floor((this.game.cameraX + this.halfSquare) / tileSize)
+    let soffsetGridY = Math.floor((this.game.cameraY + this.halfSquare) / tileSize)
     let gridX = sgridX + soffsetGridX
     let gridY = sgridY + soffsetGridY
     let kind
@@ -77,8 +81,8 @@ export class Pathfind {
 
   screenGridPositionIsSolidWG (sgridX, sgridY) {
     //debugger
-    let soffsetGridX = Math.floor((this.game.cameraX + this.halfSquare) / tsize)
-    let soffsetGridY = Math.floor((this.game.cameraY + this.halfSquare) / tsize)
+    let soffsetGridX = Math.floor((this.game.cameraX + this.halfSquare) / tileSize)
+    let soffsetGridY = Math.floor((this.game.cameraY + this.halfSquare) / tileSize)
     let gridX = sgridX + soffsetGridX
     let gridY = sgridY + soffsetGridY
     let kind
@@ -198,8 +202,8 @@ export class Pathfind {
   }
 
   getDirectionTowardsPlayer (worldX, worldY) {
-    let gridX = Math.floor(worldX / tsize)
-    let gridY = Math.floor(worldY / tsize)
+    let gridX = Math.floor(worldX / tileSize)
+    let gridY = Math.floor(worldY / tileSize)
     let L, R, U, D, max
     max = 0
     let dir = 'N'
@@ -235,21 +239,79 @@ export class Pathfind {
     return dir
   }
 
+  entityMatchesPlayerSquare (worldX, worldY){
+    
+
+    
+    if(Math.abs(worldX-this.game.player.worldX)<halfTile&&Math.abs(worldY-this.game.player.worldY)<halfTile){
+      return true
+    }else{
+      return false
+    }
+
+  }
+
+  entitySteeringMatrix (worldX, worldY) {
+    debugger
+    let gridX = Math.floor(worldX / tileSize)
+    let gridY = Math.floor(worldY / tileSize)
+    let gridvalues = [0,0,0,0,0]
+    let directions = [false,false,false,false]//UDLRC
+   
+    // up down
+    try {
+      gridvalues[0] = this.valueGrid[gridY - 1][gridX] ?? 0
+      
+    } catch (Exception) {}
+    try {
+      gridvalues[1] = this.valueGrid[gridY + 1][gridX] ?? 0
+    
+    } catch (Exception) {}
+
+    try {
+      gridvalues[2] = this.valueGrid[gridY][gridX - 1] ?? 0
+    
+    } catch (Exception) {}
+    try {
+      gridvalues[3] = this.valueGrid[gridY][gridX + 1] ?? 0
+   
+    } catch (Exception) {}
+    try {
+      gridvalues[4] = this.valueGrid[gridY][gridX] ?? 0
+   
+    } catch (Exception) {}
+
+    // //up and down
+    // if(gridvalues[0]>gridvalues[1]){
+    //   directions[0]=true
+    // }else if(gridvalues[1]>gridvalues[0]){
+    //   directions[1]=true
+    // }
+    // //left and right
+    // if(gridvalues[2]>gridvalues[3]){
+    //   directions[2]=true
+    // }else if(gridvalues[3]>gridvalues[2]){
+    //   directions[3]=true
+    // }
+
+    return gridvalues
+  }
+
   updateValueGrid () {
     // reset grids
     this.checkGrid = this.blankGrid(this.cols, this.rows, false)
     this.valueGrid = this.blankGrid(this.cols, this.rows, 0)
     // location of player on grid
-    let playerGridX = Math.floor(
-      (this.game.player.worldX + TARGET_OFFSET_X) / tsize
+    this.playerGridX = Math.floor(
+      (this.game.player.worldX + TARGET_OFFSET_X) / tileSize
     )
-    let playerGridY = Math.floor(
-      (this.game.player.worldY + TARGET_OFFSET_Y) / tsize
+    this.playerGridY = Math.floor(
+      (this.game.player.worldY + TARGET_OFFSET_Y) / tileSize
     )
     try {
       // mark the player position
-      this.checkGrid[playerGridY][playerGridX] = true
-      this.valueGrid[playerGridY][playerGridX] = PLAYER_CELL_START_VALUE
+      this.checkGrid[this.playerGridY][this.playerGridX] = true
+      this.valueGrid[this.playerGridY][this.playerGridX] = PLAYER_CELL_START_VALUE
     } catch (error) {}
     let amountToAdd = PF_GRID_PASSES + 1
     for (let i = 0; i < PF_GRID_PASSES; i++) {
@@ -309,11 +371,11 @@ export class Pathfind {
       for (let y = 0; y < this.rows; y++) {
         for (let x = 0; x < this.cols; x++) {
           if (this.valueGrid[y][x] > 0) {
-            let w = tsize - 1
-            let h = tsize - 1
+            let w = tileSize - 1
+            let h = tileSize - 1
 
-            let screenX = x * tsize + this.halfSquare - this.game.cameraX
-            let screenY = y * tsize + this.halfSquare - this.game.cameraY
+            let screenX = x * tileSize + this.halfSquare - this.game.cameraX
+            let screenY = y * tileSize + this.halfSquare - this.game.cameraY
             //let alpha = this.valueGrid[y][x]
             this.game.ctx.fillStyle = `rgba(100, 100, 0, 0.5)`
             this.game.ctx.fillText(this.valueGrid[y][x], screenX, screenY)
