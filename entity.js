@@ -5,12 +5,22 @@ const SPRITE_WIDTH = 100
 const SPRITE_HEIGHT = 100
 const UNIT_LIFE = 120
 const SPAWN_RATE = 1000
+const FRAME_DURATION_MS = 300
 const ENTITY_SPEED = 2
 const CHANGE_DIRECTION_PERIOD = 40
 const PF_SPRITE_OFFSET_X = -50
 const PF_SPRITE_OFFSET_Y = -50
+const FRAMES_PER_KIND = 4
+const DAMAGE_TO_PLAYER = 4
+const PLAYER_TOUCH_OFFSET_X = 50
+const PLAYER_TOUCH_OFFSET_Y = 50
 
 class Unit {
+  /**
+   * @param {number} worldX - world position x in pixels
+   * @param {number} worldY - world position y in pixels
+   * @param {number} kind - kind of entity
+   */
   constructor (worldX, worldY, kind) {
     this.kind = kind // 0 up / 1 down / 2 left / 3 right
     this.worldX = worldX
@@ -18,16 +28,37 @@ class Unit {
     this.active = true
     this.speed = Entity.speed
     this.imageID = 0
+    this.frameMin = 0
+    this.frameMax = 0
+    this.leftOfPlayer = true
     this.life = UNIT_LIFE
     this.velX = 0
     this.velY = 0
+    this.damageToPlayer = DAMAGE_TO_PLAYER
+    this.setFrameMinAndmax()
+  }
+  setFrameMinAndmax () {
+    this.frameMin = FRAMES_PER_KIND * this.kind
+    this.frameMax = FRAMES_PER_KIND * this.kind + FRAMES_PER_KIND - 1
+  }
+
+  takeDamage (damageAmount = 10) {
+    let newLife = this.life - damageAmount
+    if (newLife > 0) {
+      this.life = newLife
+    } else {
+      this.life = 0
+      this.active = false
+    }
   }
 }
 
 export class Entity {
   static speed = ENTITY_SPEED
   static animateSpeed = 60
+
   constructor (game) {
+    this.ready = false
     this.game = game
     this.worldXMax = this.game.tileSize * this.game.tilegrid.tilesX
     this.worldYMax = this.game.tileSize * this.game.tilegrid.tilesY
@@ -35,6 +66,7 @@ export class Entity {
     this.units = new Array(MAX_UNITS)
     this.spawnPacer = Utils.createMillisecondPacer(SPAWN_RATE)
     this.changeDirectionPacer = Utils.createTickPacer(CHANGE_DIRECTION_PERIOD)
+    this.changeFramePacer = Utils.createMillisecondPacer(FRAME_DURATION_MS)
     this.initImages()
   }
 
@@ -42,11 +74,20 @@ export class Entity {
     let sheet = new Image()
     sheet.src = './images/bugsheet0.png'
     sheet.onload = () => {
-      this.ready = true
-      let imagesL = Utils.cutSpriteSheet(sheet, 4, 4, 150, 150)
-      let imagesR = Utils.applyFunctionToImageArray(imagesL, Utils.flipImageH)
-      this.images = imagesL.concat(imagesR)
+      Utils.cutSpriteSheetCallback(sheet, 4, 4, 150, 150, output => {
+        //debugger
+        this.imagesL = output
+        this.imagesR = Utils.applyFunctionToImageArray(output, Utils.flipImageH)
+
+        //this.images = this.imagesL.concat(this.imagesR)
+      })
+      // this.imagesR = Utils.applyFunctionToImageArray(
+      //   this.imagesL,
+      //   Utils.flipImageH
+      // )
+
       console.log('enemy images loaded')
+      this.ready = true
     }
   }
 
@@ -63,20 +104,23 @@ export class Entity {
   }
 
   draw () {
-    //this.game.ctx.drawImage(this.images[0], 0, 0, SPRITE_WIDTH, SPRITE_HEIGHT)
     for (let element of this.units) {
-      //console.log('draw unit')
-      //debugger
       if (element instanceof Unit && element.active) {
         let screenX = element.worldX - this.game.cameraX
         let screenY = element.worldY - this.game.cameraY
-        this.game.ctx.drawImage(
-          this.images[element.imageID],
-          screenX,
-          screenY,
-          SPRITE_WIDTH,
-          SPRITE_HEIGHT
-        )
+        // choose left or right images
+        let imageArray = element.leftOfPlayer ? this.imagesL : this.imagesR
+        let currImage = imageArray[element.imageID]
+        //debugger
+        if (true) {
+          this.game.ctx.drawImage(
+            currImage,
+            screenX,
+            screenY,
+            SPRITE_WIDTH,
+            SPRITE_HEIGHT
+          )
+        }
       }
     }
   }
@@ -91,8 +135,7 @@ export class Entity {
       unit.worldX,
       unit.worldY
     )
-    //unit.velX = 0
-    //unit.velY = 0
+
     if (this.changeDirectionPacer()) {
       switch (direction) {
         case 'N':
@@ -118,11 +161,15 @@ export class Entity {
     let pathfindX = unit.worldX - PF_SPRITE_OFFSET_X
     let pathfindY = unit.worldY - PF_SPRITE_OFFSET_Y
 
-    if (this.game.pathfind.entityMatchesPlayerSquare(pathfindX, pathfindY)) {
+    // if (this.game.pathfind.entityMatchesPlayerSquare(pathfindX, pathfindY)) {
+
+    //   return
+    // }
+
+    if (this.entityTouchPlayer(unit)) {
       unit.velY = 0
       unit.velX = 0
-      console.log('entity match player')
-      return
+      this.game.player.playerHitByEnemy(unit)
     }
 
     let gridvalues = this.game.pathfind.entitySteeringMatrix(
@@ -173,38 +220,40 @@ export class Entity {
           unit.velX = 0
           unit.velY = 0
       }
-
-      //up and down
-      // if(gridvalues[0]>gridvalues[1]){
-      //   unit.velY = -Entity.speed
-      // }else if(gridvalues[1]>gridvalues[0]){
-      //   unit.velY = Entity.speed
-      // }
-      // //left and right
-      // if(gridvalues[2]>gridvalues[3]){
-      //   unit.velX = -Entity.speed
-      // }else if(gridvalues[3]>gridvalues[2]){
-      //   unit.velX = Entity.speed
-      // }
-
-      // if (directions[0]&&!directions[1]){
-      //   unit.velY = -Entity.speed
-      // }else if(directions[1]&&!directions[0]){
-      //   unit.velY = Entity.speed
-      // }else if (directions[2]&&!directions[3]){
-      //   unit.velX = -Entity.speed
-      // }else if(directions[3]&&!directions[2]){
-      //   unit.velX = Entity.speed
-      // }
     }
   }
 
+  /**
+ * @param {Unit} unit - current entity unit
+
+ */
+  unitAdvanceFrame (unit) {
+    if (unit.active) {
+      unit.imageID =
+        unit.imageID < unit.frameMax ? unit.imageID + 1 : unit.frameMin
+    }
+  }
+
+  entityTouchPlayer (unit) {
+    return Utils.near(
+      unit.worldX,
+      unit.worldY,
+      this.game.player.worldX,
+      this.game.player.worldY,
+      PLAYER_TOUCH_OFFSET_X,
+      PLAYER_TOUCH_OFFSET_Y
+    )
+  }
+
   update () {
-    for (let element of this.units) {
-      if (element instanceof Unit && element.active) {
-        this.setVelocity(element)
-        element.worldX += element.velX
-        element.worldY += element.velY
+    let changeFrame = this.changeFramePacer()
+    for (let unit of this.units) {
+      if (unit instanceof Unit && unit.active) {
+        this.setVelocity(unit)
+        changeFrame && this.unitAdvanceFrame(unit)
+        unit.leftOfPlayer = unit.worldX < this.game.player.worldX
+        unit.worldX += unit.velX
+        unit.worldY += unit.velY
       }
     }
   }

@@ -8,6 +8,7 @@ import { Swoosh } from './swoosh.js'
 import { Entity } from './entity.js'
 import { Pathfind } from './pathfind.js'
 import { Rastertext } from './rastertext.js'
+import { Splat } from './splat.js'
 import * as Utils from './utils.js'
 ;('use strict')
 
@@ -17,6 +18,7 @@ export const TILESIZE = 100
 const NO_SCROLL = true
 const TPS_COUNTER_INTERVAL_SEC = 5
 const FRAME_PERIOD_MS = Math.floor(1000 / 60)
+const START_HEALTH = 100
 
 /*
 
@@ -25,27 +27,57 @@ screenY = worldY - cameraY
 
 */
 
-export const game = {
-  cameraX: 0,
-  cameraY: 0,
-  tileSize: TILESIZE,
-  player: null,
-  hud: null,
-  tilegrid: null,
-  editor: null,
-  input: null,
-  entity: null,
-  swoosh: null,
-  pathfind: null,
-  collision: null,
-  ctx: null,
-  rastertext: null,
-  boardWidth: null,
-  boardHeight: null,
-  score: 0,
-  health: 0,
-  level: 0,
-  stamina: 0
+// export const game = {
+//   cameraX: 0,
+//   cameraY: 0,
+//   tileSize: TILESIZE,
+//   player: null,
+//   hud: null,
+//   tilegrid: null,
+//   editor: null,
+//   input: null,
+//   entity: null,
+//   swoosh: null,
+//   pathfind: null,
+//   collision: null,
+//   ctx: null,
+//   rastertext: null,
+//   boardWidth: null,
+//   boardHeight: null,
+//   score: 0,
+//   health: 0,
+//   level: 0,
+//   stamina: 0
+// }
+
+export let game
+
+export class Game {
+  constructor () {
+    this.cameraX = 0
+    this.cameraY = 0
+    this.tileSize = TILESIZE
+    this.player = null
+    this.hud = null
+    this.tilegrid = null
+    this.editor = null
+    this.input = null
+    this.entity = null
+    this.swoosh = null
+    this.pathfind = null
+    this.collision = null
+    this.splat = null
+    this.ctx = null
+    this.rastertext = null
+    this.boardWidth = null
+    this.boardHeight = null
+    this.score = 0
+    this.health = START_HEALTH
+    this.level = 0
+    this.stamina = START_HEALTH
+    this.objectiveTotal = 0
+    this.objectiveComplete = 0
+  }
 }
 
 //board
@@ -56,6 +88,7 @@ let boardHeight = 500
 let context //used for drawing on canvas
 
 window.onload = function () {
+  game = new Game()
   board = document.getElementById('board')
   // disable scrollbar
   const [body] = document.getElementsByTagName('body')
@@ -74,8 +107,9 @@ window.onload = function () {
   game.swoosh = new Swoosh(game)
   game.editor = new Editor(game)
   game.entity = new Entity(game)
+  game.splat = new Splat(game)
   game.rastertext = new Rastertext(game)
-  game.rastertext.addUnit(200, 15, 'AAAAHH')
+
   game.pathfind = new Pathfind(game)
   game.hud = new Hud(game)
   game.boardWidth = boardWidth
@@ -98,6 +132,7 @@ function update () {
   game.input.update()
   game.hud.update()
   game.rastertext.update()
+  game.splat.update()
   game.tickCount += 1
   if (game.counterPacer()) {
     // Math.floor(game.tickCount / (TPS_COUNTER_INTERVAL_SEC*1000))
@@ -118,15 +153,7 @@ function draw () {
     game.pathfind.draw()
     game.entity.draw()
     game.hud.draw()
+    game.splat.draw()
     game.rastertext.draw()
   }
-}
-
-const detectCollision = (a, b) => {
-  return (
-    a.x < b.x + b.width &&
-    a.x + a.width > b.x &&
-    a.y < b.y + b.height &&
-    a.y + a.height > b.y
-  )
 }

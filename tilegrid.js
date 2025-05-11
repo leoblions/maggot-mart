@@ -11,11 +11,13 @@ const DEFAULT_GROUND = 0
 const OOB_TILE_KIND = 0
 const DEFAULT_LEVEL_DATA_URL = '/data/level0.txt'
 const LOAD_DEFAULT_LEVEL = true
-const TILE_TYPE_AMOUNT = 32
+const TILE_TYPE_AMOUNT = 48
 
 export class Tilegrid {
   static grid = null
-  static solidArr = new Array(TILE_TYPE_AMOUNT).fill(false).map((v,i)=>{ return i>15?true:false})
+  static solidArr = new Array(TILE_TYPE_AMOUNT).fill(false).map((v, i) => {
+    return i > 15 ? true : false
+  })
   constructor (game) {
     this.ready = false
     this.game = game
@@ -61,14 +63,14 @@ export class Tilegrid {
     this.adjustBounds()
   }
 
-  tileSolid(tileX,tileY){
+  tileSolid (tileX, tileY) {
     // return true if solid
     //debugger
-    try{
+    try {
       let kind = Tilegrid.grid[tileY][tileX]
       let solid = Tilegrid.solidArr[kind]
       return solid
-    }catch(error){
+    } catch (error) {
       // treat as solid if out of bounds
       return true
     }
@@ -119,7 +121,12 @@ export class Tilegrid {
     )
     let floors = await batchFn('/images/floorTile0.png').then(
       result => result => {
-        for (i = 0; i < result.length; i++) this.images[i + 15] = result[i]
+        for (i = 0; i < result.length; i++) this.images[i + 16] = result[i]
+      }
+    )
+    let shelves = await batchFn('/images/shelfTile.png').then(
+      result => result => {
+        for (i = 0; i < result.length; i++) this.images[i + 32] = result[i]
       }
     )
   }
@@ -151,6 +158,19 @@ export class Tilegrid {
         images2[i].solid = true
         Tilegrid.solidArr[i + 16] = true
         this.images[i + 16] = images2[i]
+      }
+    }
+
+    let sheet3 = new Image()
+    let images3 = []
+    sheet3.src = '/images/shelfTile.png'
+
+    sheet3.onload = () => {
+      images3 = Utils.cutSpriteSheet(sheet3, 4, 4, 100, 100)
+      for (let i = 0; i < images3.length; i++) {
+        images3[i].solid = true
+        Tilegrid.solidArr[i + 32] = true
+        this.images[i + 32] = images3[i]
       }
     }
   }

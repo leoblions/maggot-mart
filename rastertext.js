@@ -1,5 +1,5 @@
 import * as Utils from './utils.js'
-const alphabet = 'abcdefghijklmnopqrstuvwxyz1234567890. '
+const alphabet = 'abcdefghijklmnopqrstuvwxyz1234567890.:/ '
 let revetment = {}
 const LETTER_SIZE = 18
 const FAIL_INDEX = 39
@@ -54,13 +54,18 @@ export class Rastertext {
   drawUnit (unit) {
     let drawX = unit.screenX
     for (const index of unit.indices) {
-      this.game.ctx.drawImage(
-        this.images[index],
-        drawX,
-        unit.screenY,
-        SPRITE_WIDTH,
-        SPRITE_HEIGHT
-      )
+      let currImage = this.images[index]
+      //debugger
+      if (currImage?.constructor.name == 'HTMLImageElement') {
+        this.game.ctx.drawImage(
+          this.images[index],
+          drawX,
+          unit.screenY,
+          SPRITE_WIDTH,
+          SPRITE_HEIGHT
+        )
+      }
+
       drawX += SPRITE_WIDTH
     }
   }

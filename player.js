@@ -10,6 +10,7 @@ const COLL_WIDTH = 50
 const COLL_HEIGHT = 80
 const FRAME_PERIOD = 120
 const SPRITES_PER_DIRECTION = 6
+const TAKE_DAMAGE_RATE_MS = 400
 
 export const dpadStart = {
   up: false,
@@ -53,8 +54,10 @@ export class Player {
     this.velX = 0
     this.velY = 0
     this.framePacer = Utils.createPacer(FRAME_PERIOD)
+    this.damagePacer = Utils.createMillisecondPacer(TAKE_DAMAGE_RATE_MS)
     this.initImages()
     //this.ready = true
+    this.hitCounter = 0
   }
   initImages0 () {
     this.image = new Image()
@@ -171,6 +174,21 @@ export class Player {
     }
     this.worldX += this.velX
     this.worldY += this.velY
+  }
+
+  playerHitByEnemy (unit) {
+    let newhealth, damage
+    //console.log('player hit')
+
+    this.hitCounter++
+    if (this.hitCounter >= 80) {
+      //debugger
+      damage = unit.damageToPlayer
+      newhealth = this.game.health - damage
+      this.game.health = newhealth > 0 ? newhealth : 0
+      this.game.hud.updateHealthbarBlankingRect(newhealth)
+      this.hitCounter = 0
+    }
   }
 
   updateFrame () {

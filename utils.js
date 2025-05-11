@@ -216,15 +216,48 @@ export function applyFunctionToImageArray (imageArray, myFunc) {
   let length = imageArray.length
   let outputArr = new Array(length)
   for (let i = 0; i < length; i++) {
-    let currentImage = imageArray[i]
-    if (!currentImage instanceof Image) {
-      console.error(`Element ${i} is not a valid image`)
-      return
-    }
-    let rotatedImage = myFunc(currentImage)
-    outputArr[i] = rotatedImage
+    outputArr[i] = myFunc(imageArray[i])
+    // if (!currentImage instanceof Image) {
+    //   console.error(`Element ${i} is not a valid image`)
+    //   return
+    // }
+    //let rotatedImage = myFunc(currentImage)
+    //outputArr[i] = rotatedImage
   }
   return outputArr
+}
+
+/**
+ * @param {Array} imageArray - The input image array.
+ * @param {func} myFunc - degrees to rotate.
+ * @returns {Array} rotated image array.
+ */
+export function applyFunctionToImageArrayWithCallback (
+  imageArray,
+  myFunc,
+  callback
+) {
+  console.log(typeof imageArray)
+  if (!imageArray instanceof Array) {
+    console.error('rotateImageArray: imageArray invalid data')
+    return
+  }
+  if (!myFunc instanceof Function) {
+    console.error('rotateImageArray: func invalid data')
+    return
+  }
+  let length = imageArray.length
+  let outputArr = new Array(length)
+  for (let i = 0; i < length; i++) {
+    outputArr[i] = myFunc(imageArray[i])
+    // if (!currentImage instanceof Image) {
+    //   console.error(`Element ${i} is not a valid image`)
+    //   return
+    // }
+    //let rotatedImage = myFunc(currentImage)
+    //outputArr[i] = rotatedImage
+  }
+  callback(outputArr)
 }
 
 /**
@@ -232,7 +265,7 @@ export function applyFunctionToImageArray (imageArray, myFunc) {
  * @param {number} degrees - degrees to rotate.
  * @returns {Image} rotated image.
  */
-export function rotateImage (imageIn, degrees) {
+export function rotateImage_ORIG (imageIn, degrees) {
   //console.log(imageIn.complete)
   if (imageIn.complete == false) {
     throw new Error("rotateImage the input image wasn't loaded yet")
@@ -264,6 +297,52 @@ export function rotateImage (imageIn, degrees) {
   return imageNew
 }
 
+/**
+ * @param {Image} imageIn - The input image.
+ * @param {number} degrees - degrees to rotate.
+ * @returns {Image} rotated image.
+ */
+export function rotateImage (imageIn, degrees) {
+  //console.log(imageIn.complete)
+  if (imageIn.complete) {
+    return processImageBody()
+  } else {
+    //do it later
+    imageIn.onload = () => {
+      return processImageBody()
+    }
+  }
+  //debugger
+
+  function processImageBody () {
+    const canvas = document.createElement('canvas')
+    document.body.appendChild(canvas)
+    canvas.id = getUnusedHTMLElementID()
+    canvas.width = imageIn.width
+    canvas.height = imageIn.height
+
+    let ctx = canvas.getContext('2d')
+
+    ctx.clearRect(0, 0, canvas.width, canvas.height)
+    //save rotation state of canvas
+    ctx.save()
+    //shift pivot point to center
+    ctx.translate(canvas.width / 2, canvas.height / 2)
+    // rotate the context
+    ctx.rotate((degrees * Math.PI) / 180)
+    // draw image to context
+    ctx.drawImage(imageIn, -imageIn.width / 2, -imageIn.width / 2)
+
+    ctx.restore()
+
+    /** @type {Image} */
+    let imageNew = canvasToImage(canvas)
+
+    document.body.removeChild(canvas)
+    return imageNew
+  }
+}
+
 export function getUnusedHTMLElementID () {
   let i = 0
   while (document.getElementById(i) != null) {
@@ -276,7 +355,7 @@ export function getUnusedHTMLElementID () {
  * @param {Image} imageIn - The input image.
  * @returns {Image} rotated image.
  */
-export function flipImageH (imageIn) {
+export function flipImageH_OLD (imageIn) {
   if (imageIn.complete == false) {
     throw new Error("  the input image wasn't loaded yet")
   }
@@ -304,6 +383,46 @@ export function flipImageH (imageIn) {
 
   document.body.removeChild(canvas)
   return imageNew
+}
+
+export function flipImageH (imageIn) {
+  if (imageIn.complete) {
+    return processImageBody()
+  } else {
+    //do it later
+    imageIn.onload = () => {
+      return processImageBody()
+    }
+  }
+
+  function processImageBody () {
+    const canvas = document.createElement('canvas')
+    document.body.appendChild(canvas)
+    canvas.id = getUnusedHTMLElementID()
+    canvas.width = imageIn.width
+    canvas.height = imageIn.height
+
+    let ctx = canvas.getContext('2d')
+
+    ctx.clearRect(0, 0, canvas.width, canvas.height)
+    //save rotation state of canvas
+    ctx.save()
+    // shift context right
+    //ctx.translate(imageIn.width, 0)
+    ctx.translate(imageIn.width, 0)
+    ctx.scale(-1, 1)
+    // draw image to context
+    ctx.drawImage(imageIn, 0, 0)
+
+    ctx.restore()
+
+    /** @type {Image} */
+    let imageNew = canvasToImage(canvas)
+
+    document.body.removeChild(canvas)
+    //debugger
+    return imageNew
+  }
 }
 
 export function cutSpriteSheetX (spritesheet, cols, rows, width, height) {
@@ -356,10 +475,17 @@ export function cutSpriteSheet (spritesheet, cols, rows, width, height) {
  * @param {number} width size of output sprites in x direction
  * @param {number} height size of output sprites in y direction
  * @param {function} callback function to call at end of this function, with array of sprites as argument
- * 
+ *
  * @returns {Number} Returns the value of x for the equation.
  */
-export function cutSpriteSheetCallback (spritesheet, cols, rows, width, height, callback) {
+export function cutSpriteSheetCallback (
+  spritesheet,
+  cols,
+  rows,
+  width,
+  height,
+  callback
+) {
   let sprites = []
   for (let y = 0; y < rows; y++) {
     for (let x = 0; x < cols; x++) {
@@ -370,9 +496,8 @@ export function cutSpriteSheetCallback (spritesheet, cols, rows, width, height, 
     }
   }
   //console.log(sprites instanceof Array)
-  
+
   callback(sprites)
- 
 }
 
 export async function cutSpriteSheetPR (spritesheet, cols, rows, width, height) {
@@ -484,7 +609,22 @@ export function createTimeout (startTicks = 0) {
   let ticksRemaining = startTicks
   const timeout = function (addTicks = 0) {
     //return true until ticks reaches zero
-    ticks += addTicks
+    ticksRemaining += addTicks
+    if (ticksRemaining <= 0) {
+      return false
+    } else {
+      ticksRemaining -= 1
+      return true
+    }
+  }
+  return timeout
+}
+
+export function createCountdown (startTicks = 0) {
+  let ticksRemaining = startTicks
+  const timeout = function (addTicks = 0) {
+    //return true until ticks reaches zero
+    ticksRemaining += addTicks
     if (ticksRemaining <= 0) {
       return false
     } else {
@@ -493,4 +633,29 @@ export function createTimeout (startTicks = 0) {
     }
   }
   return timeout(startTicks)
+}
+
+export class Rectangle {
+  constructor (x, y, w, h) {
+    this.x = x
+    this.y = y
+    this.w = w
+    this.h = h
+  }
+}
+
+export const detectCollision = (a, b) => {
+  return (
+    a.x < b.x + b.width &&
+    a.x + a.width > b.x &&
+    a.y < b.y + b.height &&
+    a.y + a.height > b.y
+  )
+}
+
+export function near (x1, y1, x2, y2, xrange, yrange) {
+  //debugger
+  let dx = Math.abs(x1 - x2)
+  let dy = Math.abs(y1 - y2)
+  return dx < xrange && dy < yrange
 }

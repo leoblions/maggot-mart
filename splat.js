@@ -4,12 +4,11 @@ const MAX_UNITS = 10
 const SPRITE_WIDTH = 100
 const SPRITE_HEIGHT = 100
 const UNIT_LIFE = 120
-const SWOOSH_RATE_MS = 800
-const SWOOSH_SPEED = 2
+const SPLAT_RATE_MS = 800
+const SPLAT_SPEED = 2
 const CHANGE_IMAGE_EVERY = 5
 const ENTITY_HIT_OFFSET = 50
 const DAMAGE_DIST = 50
-const ENTITY_SPLAT_KIND = 4
 
 class Unit {
   constructor (worldX, worldY, kind) {
@@ -17,72 +16,95 @@ class Unit {
     this.worldX = worldX
     this.worldY = worldY
     this.active = true
-    this.imageID = 0
+    //this.imageID = 0
     this.frame = 0
+    this.frameMin = 0
+    this.frameMax = 0
     this.life = UNIT_LIFE
     this.velX = 0
     this.velY = 0
     switch (this.kind) {
       case 0:
-        this.velY = -Swoosh.speed
+        //red blood
+        this.frame = this.frameMin = 0
+        this.frameMax = 11
         break
       case 1:
-        this.velY = Swoosh.speed
-        this.imageID += 8
+        //green splat
+        this.frame = this.frameMin = 12
+        this.frameMax = 28
         break
       case 2:
-        this.velX = -Swoosh.speed
-        this.imageID += 16
+        //yellow splat
+        this.frame = this.frameMin = 30
+        this.frameMax = 34
         break
       case 3:
-        this.velX = Swoosh.speed
-        this.imageID += 24
+        //single red puddle
+        this.frame = this.frameMin = 29
+        this.frameMax = 29
         break
+      case 4:
+        //random static green puddle
+        this.frameMin = 12
+        this.frameMax = 28
+        //select a random green splat that stays the same
+        this.frame = Math.trunc(Math.random() * 15) + 12
+
+        break
+    }
+  }
+  updateFrame () {
+    if (this.kind != 4 && this.life % CHANGE_IMAGE_EVERY == 0) {
+      if (this.frame < this.frameMax) {
+        this.frame += 1
+      } else {
+        this.frame = this.frameMin
+      }
     }
   }
 }
 
-export class Swoosh {
-  static speed = SWOOSH_SPEED
+export class Splat {
+  static speed = SPLAT_SPEED
   static animateSpeed = 60
   constructor (game) {
     this.game = game
     this.images = null
     this.units = new Array(MAX_UNITS)
-    this.swooshPacer = Utils.createMillisecondPacer(SWOOSH_RATE_MS)
+    this.swooshPacer = Utils.createMillisecondPacer(SPLAT_RATE_MS)
     this.initImages()
   }
 
   async initImages () {
     let sheet = new Image()
-    sheet.src = './images/swoosh1m.png'
+    sheet.src = './images/splatsheet.png'
     sheet.onload = () => {
       this.ready = true
-      let imagesU, imagesD, imagesL, imagesR
+      let images, imagesD, imagesL, imagesR
       //promises
-      Utils.cutSpriteSheetCallback(sheet, 8, 1, 100, 100, output => {
-        imagesU = output
-        //debugger
-        imagesD = Utils.rotateImageArray(imagesU, 180)
-        imagesL = Utils.rotateImageArray(imagesU, 270)
-        imagesR = Utils.rotateImageArray(imagesU, 90)
-        this.images = imagesU.concat(imagesD, imagesL, imagesR)
-        console.log('swoosh images loaded')
+      Utils.cutSpriteSheetCallback(sheet, 6, 6, 100, 100, output => {
+        this.images = output
+
+        console.log('splat images loaded')
       })
     }
   }
 
   addUnit (worldX, worldY, kind) {
+    let newUnit
     for (let i = 0; i < MAX_UNITS; i++) {
       let element = this.units[i]
       if (!(element instanceof Unit) || !element.active) {
         if (this.swooshPacer()) {
-          this.units[i] = new Unit(worldX, worldY, kind)
-          console.log('added unit')
+          newUnit = new Unit(worldX, worldY, kind)
+          this.units[i] = newUnit
+          console.log('added splat')
           break
         }
       }
     }
+    return newUnit
   }
 
   draw () {
@@ -91,10 +113,10 @@ export class Swoosh {
       //console.log('draw unit')
       //debugger
       if (element instanceof Unit && element.active) {
+        debugger
         let screenX = element.worldX - this.game.cameraX
         let screenY = element.worldY - this.game.cameraY
-        let image = this.images[element.imageID + element.frame]
-        //debugger
+        let image = this.images[element.frame]
         if (image == null) {
           return
         }
@@ -119,16 +141,6 @@ export class Swoosh {
         let dY = Math.abs(entY - unit.worldY)
         if (dX < DAMAGE_DIST && dY < DAMAGE_DIST) {
           entity.takeDamage()
-          //debugger
-          let splat = this.game.splat.addUnit(
-            entity.worldX,
-            entity.worldY,
-            ENTITY_SPLAT_KIND
-          )
-          //splat.velX = unit.velX
-          //splat.velY = unit.velY
-          entity.active = false
-          break
         }
       }
     }
@@ -145,13 +157,7 @@ export class Swoosh {
         } else {
           element.active = false
         }
-        if (element.life % CHANGE_IMAGE_EVERY == 0) {
-          if (element.frame < 7) {
-            element.frame += 1
-          } else {
-            element.frame = 0
-          }
-        }
+        element.updateFrame()
       }
     }
   }
