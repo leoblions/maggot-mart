@@ -4,9 +4,10 @@ const MAX_UNITS = 10
 const SPRITE_WIDTH = 100
 const SPRITE_HEIGHT = 100
 const UNIT_LIFE = 120
-const SPAWN_RATE = 1000
+const SPAWN_RATE = 10000
 const FRAME_DURATION_MS = 300
 const ENTITY_SPEED = 2
+const MAX_KIND = 3
 const CHANGE_DIRECTION_PERIOD = 40
 const PF_SPRITE_OFFSET_X = -50
 const PF_SPRITE_OFFSET_Y = -50
@@ -14,6 +15,9 @@ const FRAMES_PER_KIND = 4
 const DAMAGE_TO_PLAYER = 4
 const PLAYER_TOUCH_OFFSET_X = 50
 const PLAYER_TOUCH_OFFSET_Y = 50
+const ENABLE_SPAWNER = true
+const SPAWN_X = 1000
+const SPAWN_Y = 900
 
 class Unit {
   /**
@@ -36,9 +40,12 @@ class Unit {
     this.velY = 0
     this.damageToPlayer = DAMAGE_TO_PLAYER
     this.setFrameMinAndmax()
+    //this.spawnerPacer = Utils.createMillisecondPacer(SPAWN_RATE)
   }
   setFrameMinAndmax () {
+    //debugger
     this.frameMin = FRAMES_PER_KIND * this.kind
+    this.imageID = this.frameMin
     this.frameMax = FRAMES_PER_KIND * this.kind + FRAMES_PER_KIND - 1
   }
 
@@ -88,6 +95,21 @@ export class Entity {
 
       console.log('enemy images loaded')
       this.ready = true
+    }
+  }
+
+  spawnUnit () {
+    let kind = Math.floor(Math.random() * MAX_KIND)
+    let worldX = SPAWN_X
+    let worldY = SPAWN_Y
+    for (let i = 0; i < MAX_UNITS; i++) {
+      let element = this.units[i]
+      if (!(element instanceof Unit) || !element.active) {
+        if (this.spawnPacer()) {
+          this.units[i] = new Unit(worldX, worldY, kind)
+          console.log('add unit to ' + i)
+        }
+      }
     }
   }
 
@@ -247,6 +269,7 @@ export class Entity {
 
   update () {
     let changeFrame = this.changeFramePacer()
+    ENABLE_SPAWNER && this.spawnUnit()
     for (let unit of this.units) {
       if (unit instanceof Unit && unit.active) {
         this.setVelocity(unit)

@@ -113,7 +113,7 @@ export class Splat {
       //console.log('draw unit')
       //debugger
       if (element instanceof Unit && element.active) {
-        debugger
+        // debugger
         let screenX = element.worldX - this.game.cameraX
         let screenY = element.worldY - this.game.cameraY
         let image = this.images[element.frame]

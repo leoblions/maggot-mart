@@ -1,0 +1,265 @@
+import * as Utils from './utils.js'
+
+const MAX_UNITS = 10
+const SPRITE_WIDTH = 50
+const SPRITE_HEIGHT = 50
+const SPRITE_OFFSET = 25
+
+const PICKUP_RATE = 5000
+const UPDATE_CULL_PERIOD = 1000
+
+const AVOID_FLOOR_CELL_NEAR_PLAYER = false
+const ENTITY_HIT_OFFSET = 50
+const DAMAGE_DIST = 50
+const MAX_KIND = 35
+const CULL_DISTANCE = 500
+const TOUCH_PLAYER_RANGE = 50
+const CHECK_TOUCH_PERIOD = 100
+const OBJECTIVE_ITEM_SLOT = 0
+const RAND_ITEM_MIN_INDEX = 1 //slot zero is reserved for objective items
+
+const FRUIT_KIND_MIN_INDEX = 0
+const FRUIT_KIND_MAX_INDEX = 35
+
+const BOX_KIND_MIN_INDEX = 36
+const BOX_KIND_MAX_INDEX = 45
+
+const SPRAY_KIND_MIN_INDEX = 46
+const SPRAY_KIND_MAX_INDEX = 50
+
+class Unit {
+  constructor (worldX, worldY, kind) {
+    this.kind = kind // 0 up / 1 down / 2 left / 3 right
+    this.worldX = worldX
+    this.worldY = worldY
+    this.active = true
+    this.visible = true // false if off screen
+    this.frame = 0
+    this.frameMin = 0
+    this.frameMax = 0
+    this.currentObjectiveItem = 36
+    this.spawnObjectiveItem = true
+    this.velX = 0
+    this.velY = 0
+  }
+  checkRange (range) {
+    let dX = Math.abs(this.worldX - Pickup.sgame.player.worldX)
+    let dY = Math.abs(this.worldY - Pickup.sgame.player.worldY)
+    return dX < range && dY < range
+  }
+}
+
+export class Pickup {
+  static sgame = null
+  constructor (game) {
+    this.game = game
+    Pickup.sgame = game
+    this.images = null
+    this.units = new Array(MAX_UNITS)
+    this.randomPlacePacer = Utils.createMillisecondPacer(PICKUP_RATE)
+    this.updateCullPacer = Utils.createMillisecondPacer(UPDATE_CULL_PERIOD)
+    this.checkTouchPacer = Utils.createMillisecondPacer(CHECK_TOUCH_PERIOD)
+    this.initImages()
+  }
+
+  async initImages0 () {
+    let sheet = new Image()
+    sheet.src = './images/produce.png'
+    sheet.onload = () => {
+      this.ready = true
+      let images, imagesD, imagesL, imagesR
+      //promises
+      Utils.cutSpriteSheetCallback(sheet, 6, 6, 100, 100, output => {
+        this.images = output
+
+        console.log('pickup images loaded')
+      })
+    }
+  }
+
+  initImages () {
+    this.images = new Array(32)
+    let sheet = new Image()
+    let len = 0
+    sheet.src = '/images/produce.png'
+    sheet = sheet
+    let images1 = null
+    sheet.onload = () => {
+      images1 = Utils.cutSpriteSheet(sheet, 6, 6, 100, 100)
+      for (let i = 0; i < 0 + images1.length; i++) {
+        this.images[i + 0] = images1[i]
+      }
+    }
+
+    let sheet2 = new Image()
+    let images2 = []
+    sheet2.src = '/images/boxescans.png'
+
+    sheet2.onload = () => {
+      images2 = Utils.cutSpriteSheet(sheet2, 4, 4, 100, 100)
+      for (let i = 0; i < images2.length; i++) {
+        images2[i].solid = true
+
+        this.images[i + BOX_KIND_MIN_INDEX] = images2[i]
+      }
+    }
+  }
+
+  updateDisplayUnits () {
+    this.displayUnits = []
+    for (const unit of this.units) {
+      if (unit?.constructor.name == 'Unit' && unit.active && unit.isInRange()) {
+        this.displayUnits.append(unit)
+      }
+    }
+  }
+
+  checkPlayerTouchedDisplayUnits () {
+    this.displayUnits = []
+    for (const unit of this.units) {
+      if (unit?.constructor.name == 'Unit' && unit.active && unit.isInRange()) {
+        this.displayUnits.append(unit)
+      }
+    }
+  }
+
+  getRandomFloorCell () {
+    let foundFloor = false
+    while (!foundFloor) {
+      let tileX =
+        Math.trunc(Math.random() * (this.game.tilegrid.tilesX - 2)) + 1
+      let tileY =
+        Math.trunc(Math.random() * (this.game.tilegrid.tilesY - 2)) + 1
+      if (!this.game.tilegrid.tileSolid(tileX, tileY)) {
+        let worldX = tileX * this.game.tileSize
+        let worldY = tileY * this.game.tileSize
+        if (AVOID_FLOOR_CELL_NEAR_PLAYER) {
+          if (
+            Math.abs(worldX - this.game.player.worldX) > CULL_DISTANCE &&
+            Math.abs(worldY - this.game.player.worldY) > CULL_DISTANCE
+          ) {
+            foundFloor = true
+            return [worldX, worldY]
+          }
+        } else {
+          foundFloor = true
+          return [worldX, worldY]
+        }
+      }
+    }
+    return null
+  }
+
+  addRandomUnit () {
+    let [worldX, worldY] = this.getRandomFloorCell()
+
+    let kind = Math.trunc(Math.random() * MAX_KIND)
+    if (kind >= 36 && kind <= 45) {
+      // dont add boxes as random items
+      kind = 35
+    }
+    let newUnit
+    for (let i = RAND_ITEM_MIN_INDEX; i < MAX_UNITS; i++) {
+      let element = this.units[i]
+      if (!(element instanceof Unit) || !element.active) {
+        newUnit = new Unit(worldX, worldY, kind)
+
+        this.units[i] = newUnit
+        return newUnit
+      }
+    }
+    return null
+  }
+
+  addUnit (worldX, worldY, kind) {
+    let newUnit
+    for (let i = 0; i < MAX_UNITS; i++) {
+      let element = this.units[i]
+      if (!(element instanceof Unit) || !element.active) {
+        newUnit = new Unit(worldX, worldY, kind)
+        this.units[i] = newUnit
+        return newUnit
+      }
+    }
+    return null
+  }
+
+  addObjectiveUnit () {
+    let kind = this.currentObjectiveItem
+
+    let worldX,
+      worldY = this.getRandomFloorCell()
+    let newUnit = (this.units[OBJECTIVE_ITEM_SLOT] = new Unit(
+      worldX,
+      worldY,
+      kind
+    ))
+
+    return newUnit
+  }
+
+  addUnitAtIndex (worldX, worldY, kind, index) {
+    this.units[index] = new Unit(worldX, worldY, kind)
+  }
+
+  draw () {
+    //this.game.ctx.drawImage(this.images[0], 0, 0, SPRITE_WIDTH, SPRITE_HEIGHT)
+    for (let element of this.units) {
+      //console.log('draw unit')
+      //debugger
+      if (element instanceof Unit && element.active && element.visible) {
+        // debugger
+        let screenX = element.worldX - this.game.cameraX + SPRITE_OFFSET
+        let screenY = element.worldY - this.game.cameraY + SPRITE_OFFSET
+        let image = this.images[element.kind]
+        if (image == null) {
+          return
+        }
+        this.game.ctx.drawImage(
+          image,
+          screenX,
+          screenY,
+          SPRITE_WIDTH,
+          SPRITE_HEIGHT
+        )
+      }
+    }
+  }
+
+  checkUnitHitEntity (unit) {
+    for (const entity of this.game.entity.units) {
+      //debugger
+      if (entity?.constructor.name == 'Unit' && entity.active) {
+        let entX = ENTITY_HIT_OFFSET + entity.worldX
+        let entY = ENTITY_HIT_OFFSET + entity.worldY
+        let dX = Math.abs(entX - unit.worldX)
+        let dY = Math.abs(entY - unit.worldY)
+        if (dX < DAMAGE_DIST && dY < DAMAGE_DIST) {
+          entity.takeDamage()
+        }
+      }
+    }
+  }
+
+  update () {
+    let checkVisible = this.updateCullPacer()
+    let checkTouched = this.checkTouchPacer()
+    this.randomPlacePacer() && this.addRandomUnit()
+
+    for (let element of this.units) {
+      if (element instanceof Unit && element.active) {
+        this.checkUnitHitEntity(element)
+        element.worldX += element.velX
+        element.worldY += element.velY
+        if (checkVisible) {
+          element.visible = element.checkRange(CULL_DISTANCE)
+        }
+        if (checkTouched && element.checkRange(TOUCH_PLAYER_RANGE)) {
+          element.active = false
+          this.game.sound.playSoundByName('chime1')
+          this.game.score += 1
+        }
+      }
+    }
+  }
+}

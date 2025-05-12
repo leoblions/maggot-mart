@@ -10,10 +10,25 @@ export const EditMode = Object.freeze({
 })
 
 export class Editor {
-  static mode = EditMode.Tile
+  static mode = 0
   static asset = 0
   static editString = ''
   static editStringElement
+
+  static changeMode () {
+    /**
+     * tile 0
+     * decor 1
+     * widget 2
+     * entity 3
+     * trigger 4
+     */
+    if (Editor.mode < 4) {
+      Editor.mode++
+    } else {
+      Editor.mode = 0
+    }
+  }
 
   constructor (game) {
     this.game = game
@@ -38,6 +53,11 @@ export class Editor {
     const assetminus = document.getElementById('assetminus')
     assetminus.addEventListener('click', () => {
       Editor.asset -= 1
+      Editor.setEditString()
+    })
+    const assetkind = document.getElementById('assetkind')
+    assetkind.addEventListener('click', () => {
+      Editor.changeMode()
       Editor.setEditString()
     })
     const savecookie = document.getElementById('savecookie')
@@ -89,7 +109,11 @@ export class Editor {
         this.game.tilegrid.editTile(gridLoc.gridX, gridLoc.gridY, Editor.asset)
         break
       case 4:
-        this.game.tilegrid.editTile(gridLoc.gridX, gridLoc.gridY, Editor.asset)
+        this.game.trigger.addUnitToGridDefault(
+          gridLoc.gridX,
+          gridLoc.gridY,
+          Editor.asset
+        )
         break
     }
   }

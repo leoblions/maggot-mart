@@ -144,6 +144,7 @@ export class Player {
     }
     if (keys['f'] == true) {
       this.game.swoosh.addUnit(this.worldX, this.worldY, this.swooshDirection())
+      this.game.sound.playSoundByName('spray1')
     }
 
     if (keys['e'] == true) {

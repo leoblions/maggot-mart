@@ -9,6 +9,9 @@ import { Entity } from './entity.js'
 import { Pathfind } from './pathfind.js'
 import { Rastertext } from './rastertext.js'
 import { Splat } from './splat.js'
+import { Pickup } from './pickup.js'
+import { Sound } from './sound.js'
+import { Trigger } from './trigger.js'
 import * as Utils from './utils.js'
 ;('use strict')
 
@@ -65,9 +68,12 @@ export class Game {
     this.entity = null
     this.swoosh = null
     this.pathfind = null
+    this.puckup = null
     this.collision = null
     this.splat = null
     this.ctx = null
+    this.sound = null
+    this.game = null
     this.rastertext = null
     this.boardWidth = null
     this.boardHeight = null
@@ -108,10 +114,12 @@ window.onload = function () {
   game.editor = new Editor(game)
   game.entity = new Entity(game)
   game.splat = new Splat(game)
+  game.pickup = new Pickup(game)
   game.rastertext = new Rastertext(game)
-
+  game.sound = new Sound(this)
   game.pathfind = new Pathfind(game)
   game.hud = new Hud(game)
+  game.trigger = new Trigger(game)
   game.boardWidth = boardWidth
   game.boardHeight = boardHeight
   game.tickCount = 0
@@ -133,6 +141,8 @@ function update () {
   game.hud.update()
   game.rastertext.update()
   game.splat.update()
+  game.pickup.update()
+  game.trigger.update()
   game.tickCount += 1
   if (game.counterPacer()) {
     // Math.floor(game.tickCount / (TPS_COUNTER_INTERVAL_SEC*1000))
@@ -149,11 +159,15 @@ function draw () {
     context.clearRect(0, 0, board.width, board.height) // clear previous frame
     game.tilegrid.draw()
     game.swoosh.draw()
+    game.splat.draw()
+    game.pickup.draw()
     game.player.draw()
     game.pathfind.draw()
+    game.trigger.draw()
     game.entity.draw()
+    //top
     game.hud.draw()
-    game.splat.draw()
+
     game.rastertext.draw()
   }
 }

@@ -26,6 +26,7 @@ export class Hud {
    */
   constructor (game) {
     this.game = game
+    this.gridX, this.gridY
 
     this.blackRect = new Utils.Rectangle()
     this.images = null
@@ -95,6 +96,7 @@ export class Hud {
     ctx.font = `12px sans-serif`
     ctx.fillText(SCORE_TEMPLATE + this.game.score, SCORE_X, SCORE_Y)
     ctx.fillText('TPS ' + this.game.displayTPS, SCORE_X, SCORE_Y + 20)
+    ctx.fillText(`Player:  ${this.gridX} ${this.gridY}`, SCORE_X, SCORE_Y + 40)
     this.drawHealthbar()
   }
 
@@ -118,7 +120,14 @@ export class Hud {
     }
   }
 
-  updateObjectiveText () {}
+  updateObjectiveText () {
+    this.gridX = Math.floor(
+      this.game.player.worldX / this.game.tilegrid.tileSize
+    )
+    this.gridY = Math.floor(
+      this.game.player.worldY / this.game.tilegrid.tileSize
+    )
+  }
 
   update () {
     this.score = this.game.score

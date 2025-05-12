@@ -15,6 +15,7 @@ const TILE_TYPE_AMOUNT = 48
 
 export class Tilegrid {
   static grid = null
+  static tileSize
   static solidArr = new Array(TILE_TYPE_AMOUNT).fill(false).map((v, i) => {
     return i > 15 ? true : false
   })
@@ -26,6 +27,7 @@ export class Tilegrid {
     //this.cameraSpeed = this.player.speed
     this.images = Array(amountOfPictures).fill(null)
     this.tileSize = this.game.tileSize
+    Tilegrid.tileSize = this.game.tileSize
     console.log(Tilegrid.solidArr)
     this.bounds = {
       startX: 0,
@@ -97,38 +99,6 @@ export class Tilegrid {
     this.bounds.startY = Math.max(0, pTileY - tileDrawDist)
     this.bounds.endX = Math.min(tilesX - 1, pTileX + tileDrawDist)
     this.bounds.endY = Math.min(tilesY - 1, pTileY + tileDrawDist)
-  }
-
-  async getImages () {
-    // get group of pictures, is asynchronous due to loading image
-    async function batchFn (sheetURL) {
-      let sheet = new Image()
-      sheet.src = sheetURL
-      sheet = sheet
-      let imageBatch = null
-      sheet.onload = () => {
-        // prevent these from running until input image is loaded
-        //this.image = Utils.getSubImage(sheet, 0, 0, 100, 100)
-        imageBatch = Utils.cutSpriteSheet(sheet, 4, 4, 100, 100)
-        return imageBatch
-      }
-    }
-    // when image partial arrays done, copy results to main image array
-    let walls = await batchFn('/images/wallTile0.png').then(
-      result => result => {
-        for (i = 0; i < result.length; i++) this.images[i] = result[i]
-      }
-    )
-    let floors = await batchFn('/images/floorTile0.png').then(
-      result => result => {
-        for (i = 0; i < result.length; i++) this.images[i + 16] = result[i]
-      }
-    )
-    let shelves = await batchFn('/images/shelfTile.png').then(
-      result => result => {
-        for (i = 0; i < result.length; i++) this.images[i + 32] = result[i]
-      }
-    )
   }
 
   initImages () {
