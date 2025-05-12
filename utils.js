@@ -1,5 +1,6 @@
 const NEWLINE_CHAR = 'n'
 const COL_DELIMITER = ','
+const GRID_MIN_ROW_LENGTH = 2
 
 /*
 
@@ -110,7 +111,9 @@ export function stringToGrid (instring) {
     for (let x = 0; x < cols; x++) {
       rowNumbers[x] = Number(splitToCols[x])
     }
-    output[y] = rowNumbers
+    if (rowNumbers.length >= GRID_MIN_ROW_LENGTH) {
+      output[y] = rowNumbers
+    }
   }
 
   return output

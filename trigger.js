@@ -2,16 +2,7 @@ import * as Utils from './utils.js'
 import { Tilegrid } from './tilegrid.js'
 
 const MAX_UNITS = 10
-const SPRITE_WIDTH = 100
-const SPRITE_HEIGHT = 100
-const UNIT_LIFE = 120
-const SPLAT_RATE_MS = 800
-const SPLAT_SPEED = 2
-const CHANGE_IMAGE_EVERY = 5
-const ENTITY_HIT_OFFSET = 50
-const DAMAGE_DIST = 50
-const DEFAULT_WIDTH = 100
-const DEFAULT_HEIGHT = 100
+
 const CHECK_TOUCHED_PERIOD = 800
 const CLICK_ADD_PACER = 1000
 const HIGHTLIGHT_COLOR = `rgba(1, 100, 100, 0.5)`
@@ -41,6 +32,7 @@ class Unit {
 }
 
 export class Trigger {
+  static grid
   constructor (game) {
     this.game = game
     this.units = new Array(MAX_UNITS)
@@ -69,11 +61,30 @@ export class Trigger {
     return false
   }
 
+  updateGrid () {
+    let grid = []
+    for (const unit of this.units) {
+      if (unit instanceof Unit) {
+        let row = [
+          unit.gridX,
+          unit.gridY,
+          unit.gridW,
+          unit.gridH,
+          unit.actionID
+        ]
+        grid.push(row)
+      }
+    }
+    console.log('trigger grid updated')
+    Trigger.grid = grid
+  }
+
   addUnitToGridDefault (gridX, gridY, actionID) {
     let gridW = 1
     let gridH = 1
     if (this.clickAddPacer()) {
       this.addUnitToGrid(gridX, gridY, gridW, gridH, actionID)
+      this.updateGrid()
     }
   }
 

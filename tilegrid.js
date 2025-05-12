@@ -51,6 +51,7 @@ export class Tilegrid {
       Utils.loadFileAsText(DEFAULT_LEVEL_DATA_URL).then(
         function (value) {
           let grid = Utils.stringToGrid(value)
+
           //console.log(grid)
           if (grid != undefined && grid != null && grid.length != 0) {
             Tilegrid.grid = grid

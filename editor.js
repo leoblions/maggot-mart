@@ -1,5 +1,6 @@
 import * as Utils from './utils.js'
 import { Tilegrid } from './tilegrid.js'
+import { Trigger } from './trigger.js'
 // enum for which kind of asset data is being edited
 export const EditMode = Object.freeze({
   Tile: 0,
@@ -83,7 +84,13 @@ export class Editor {
     const toclipboard = document.getElementById('toclipboard')
     toclipboard.addEventListener('click', function () {
       console.log('toclipboard')
-      let grid = Tilegrid.grid
+      let grid
+      if (Editor.mode == 0) {
+        grid = Tilegrid.grid
+      } else if (Editor.mode == 4) {
+        grid = Trigger.grid
+      }
+
       let gridAsString = Utils.gridToString(grid)
       //Utils.saveStringToCookie('toclipboard', gridAsString)
       navigator.clipboard.writeText(gridAsString)
