@@ -6,6 +6,14 @@ const MAX_UNITS = 10
 const CHECK_TOUCHED_PERIOD = 800
 const CLICK_ADD_PACER = 1000
 const HIGHTLIGHT_COLOR = `rgba(1, 100, 100, 0.5)`
+const DEFAULT_LEVEL_DATA_URL = '/data/trigger0.txt'
+const LEVEL_DATA_PREFIX = '/data/trigger'
+const LEVEL_DATA_SUFFIX = '.txt'
+const LOAD_DEFAULT_LEVEL = false
+/**
+ * Data format:
+ * gridX, gridY, gridW, gridH, actionID
+ */
 
 class Unit {
   constructor (gridX, gridY, gridW, gridH, actionID) {
@@ -33,6 +41,7 @@ class Unit {
 
 export class Trigger {
   static grid
+  static lastInstance
   constructor (game) {
     this.game = game
     this.units = new Array(MAX_UNITS)
@@ -40,6 +49,62 @@ export class Trigger {
       CHECK_TOUCHED_PERIOD
     )
     this.clickAddPacer = new Utils.createMillisecondPacer(CLICK_ADD_PACER)
+    Trigger.lastInstance = this
+    if (LOAD_DEFAULT_LEVEL) {
+      this.loadDefaultLevel()
+    } else {
+      this.loadCurrentLevel()
+    }
+    //this.adjustBounds()
+  }
+
+  loadCurrentLevel () {
+    let currentLevelFile =
+      LEVEL_DATA_PREFIX + this.game.level + LEVEL_DATA_SUFFIX
+    Utils.loadFileAsText(currentLevelFile).then(
+      function (value) {
+        let grid = Utils.stringToGrid(value)
+
+        //console.log(grid)
+        if (grid != undefined && grid != null && grid.length != 0) {
+          Trigger.grid = grid
+          Trigger.lastInstance.gridDataToUnitsList()
+        }
+      },
+      function (error) {
+        console.log('No data found for ' + currentLevelFile)
+        //console.log(error)
+        Trigger.grid = null
+      }
+    )
+  }
+
+  loadDefaultLevel () {
+    Utils.loadFileAsText(DEFAULT_LEVEL_DATA_URL).then(
+      function (value) {
+        let grid = Utils.stringToGrid(value)
+
+        //console.log(grid)
+        if (grid != undefined && grid != null && grid.length != 0) {
+          Trigger.grid = grid
+          Tilegrid.lastInstance.gridDataToUnitsList()
+        }
+      },
+      function (error) {
+        console.log('Load default level failed.')
+        console.log(error)
+      }
+    )
+  }
+
+  gridDataToUnitsList () {
+    for (const row of Trigger.grid) {
+      this.units = []
+      // destructure each line of grid
+      const [gridX, gridY, gridW, gridH, actionID] = row
+      let newUnit = new Unit(gridX, gridY, gridW, gridH, actionID)
+      this.units.push(newUnit)
+    }
   }
 
   addUnitAtPoint (worldX, worldY, actionID) {
@@ -128,14 +193,17 @@ export class Trigger {
     )
   }
 
-  triggerAction (triggerID) {
-    console.log('Trigger action ' + triggerID)
+  triggerAction (actionID) {
+    console.log('Trigger action ' + actionID)
+    this.game.brain.enqueueAction(actionID)
   }
 
   checkPlayerTouchUnit (unit) {
-    if (unit?.constructor.name == 'Unit' && entity.active) {
+    if (unit?.constructor.name == 'Unit' && unit.active) {
+      debugger
       if (this.detectCollision(unit, this.game.player)) {
-        this.triggerAction(unit.triggerID)
+        debugger
+        this.triggerAction(unit.actionID)
       }
     }
   }
@@ -143,7 +211,12 @@ export class Trigger {
   update () {
     for (let unit of this.units) {
       if (unit instanceof Unit && unit.active) {
-        this.checkTouchedPacer() && this.checkPlayerTouchUnit()
+        if (
+          this.checkTouchedPacer() &&
+          this.detectCollision(unit, this.game.player)
+        ) {
+          this.triggerAction(unit.actionID)
+        }
       }
     }
   }

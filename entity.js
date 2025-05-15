@@ -15,7 +15,7 @@ const FRAMES_PER_KIND = 4
 const DAMAGE_TO_PLAYER = 4
 const PLAYER_TOUCH_OFFSET_X = 50
 const PLAYER_TOUCH_OFFSET_Y = 50
-const ENABLE_SPAWNER = true
+const ENABLE_SPAWNER = false
 const SPAWN_X = 1000
 const SPAWN_Y = 900
 
@@ -63,6 +63,7 @@ class Unit {
 export class Entity {
   static speed = ENTITY_SPEED
   static animateSpeed = 60
+  static spawner = false
 
   constructor (game) {
     this.ready = false
@@ -134,7 +135,7 @@ export class Entity {
         let imageArray = element.leftOfPlayer ? this.imagesL : this.imagesR
         let currImage = imageArray[element.imageID]
         //debugger
-        if (true) {
+        if (currImage) {
           this.game.ctx.drawImage(
             currImage,
             screenX,
@@ -269,7 +270,7 @@ export class Entity {
 
   update () {
     let changeFrame = this.changeFramePacer()
-    ENABLE_SPAWNER && this.spawnUnit()
+    Entity.spawner && this.spawnUnit()
     for (let unit of this.units) {
       if (unit instanceof Unit && unit.active) {
         this.setVelocity(unit)

@@ -1,6 +1,8 @@
 import * as Utils from './utils.js'
 import { Tilegrid } from './tilegrid.js'
 import { Trigger } from './trigger.js'
+import { Decor } from './decor.js'
+import { Entity } from './entity.js'
 // enum for which kind of asset data is being edited
 export const EditMode = Object.freeze({
   Tile: 0,
@@ -12,6 +14,7 @@ export const EditMode = Object.freeze({
 
 export class Editor {
   static mode = 0
+  static delete = false
   static asset = 0
   static editString = ''
   static editStringElement
@@ -61,6 +64,20 @@ export class Editor {
       Editor.changeMode()
       Editor.setEditString()
     })
+    const deletemode = document.getElementById('deletemode')
+    deletemode.addEventListener('click', () => {
+      Editor.delete = !Editor.delete
+      Editor.setEditString()
+      const deletemode = document.getElementById('deletemode')
+      deletemode.innerText = Editor.delete ? 'Delete ON' : 'Delete OFF'
+    })
+    const spawner = document.getElementById('spawner')
+    spawner.addEventListener('click', () => {
+      Entity.delete = !Entity.delete
+      //Editor.setEditString()
+      const spawner = document.getElementById('spawner')
+      spawner.innerText = Entity.spawner ? 'Spawner ON' : 'Spawner OFF'
+    })
     const savecookie = document.getElementById('savecookie')
     savecookie.addEventListener('click', function () {
       console.log('save cookie')
@@ -85,10 +102,24 @@ export class Editor {
     toclipboard.addEventListener('click', function () {
       console.log('toclipboard')
       let grid
-      if (Editor.mode == 0) {
-        grid = Tilegrid.grid
-      } else if (Editor.mode == 4) {
-        grid = Trigger.grid
+      switch (Editor.mode) {
+        case 0:
+          grid = Tilegrid.grid
+          break
+        case 1:
+          grid = Decor.grid
+          break
+        case 2:
+          grid = Widget.grid
+          break
+        case 3:
+          gird = Entity.grid
+          break
+        case 4:
+          grid = Trigger.grid
+          break
+        default:
+          grid = null
       }
 
       let gridAsString = Utils.gridToString(grid)
@@ -103,24 +134,39 @@ export class Editor {
 
     switch (Editor.mode) {
       case 0:
-        this.game.tilegrid.editTile(gridLoc.gridX, gridLoc.gridY, Editor.asset)
-        console.log('tile edit')
+        if (!Editor.delete) {
+          this.game.tilegrid.editTile(
+            gridLoc.gridX,
+            gridLoc.gridY,
+            Editor.asset
+          )
+        } else {
+          this.game.tilegrid.delTile(gridLoc.gridX, gridLoc.gridY)
+        }
         break
       case 1:
-        this.game.tilegrid.editTile(gridLoc.gridX, gridLoc.gridY, Editor.asset)
+        if (!Editor.delete) {
+          this.game.decor.editTile(gridLoc.gridX, gridLoc.gridY, Editor.asset)
+        } else {
+          this.game.decor.delTile(gridLoc.gridX, gridLoc.gridY)
+        }
+
         break
       case 2:
-        this.game.tilegrid.editTile(gridLoc.gridX, gridLoc.gridY, Editor.asset)
+        this.game.widget.editTile(gridLoc.gridX, gridLoc.gridY, Editor.asset)
         break
       case 3:
-        this.game.tilegrid.editTile(gridLoc.gridX, gridLoc.gridY, Editor.asset)
+        this.game.entity.editTile(gridLoc.gridX, gridLoc.gridY, Editor.asset)
         break
       case 4:
-        this.game.trigger.addUnitToGridDefault(
-          gridLoc.gridX,
-          gridLoc.gridY,
-          Editor.asset
-        )
+        if (!Editor.delete) {
+          this.game.trigger.addUnitToGridDefault(
+            gridLoc.gridX,
+            gridLoc.gridY,
+            Editor.asset
+          )
+        }
+
         break
     }
   }

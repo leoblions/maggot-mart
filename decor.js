@@ -1,0 +1,216 @@
+import * as Utils from './utils.js'
+
+const tilesX = 20
+const tilesY = 20
+const tileDrawDist = 6
+//const tileSize = 100
+const CAMERA_SPEED = 4
+const amountOfPictures = 32
+
+const DEFAULT_GROUND = -1
+const OOB_TILE_KIND = 0
+const DEFAULT_LEVEL_DATA_URL = '/data/level0.txt'
+const LEVEL_DATA_PREFIX = '/data/decor'
+const LEVEL_DATA_SUFFIX = '.txt'
+const LOAD_DEFAULT_LEVEL = false
+const TILE_TYPE_AMOUNT = 48
+
+export class Decor {
+  static grid = null
+  static tileSize
+
+  constructor (game) {
+    this.ready = false
+    this.game = game
+    this.tilesX = tilesX
+    this.tilesY = tilesY
+    //this.cameraSpeed = this.player.speed
+    this.images = Array(amountOfPictures).fill(null)
+    this.tileSize = this.game.tileSize
+    Decor.tileSize = this.game.tileSize
+    this.bounds = {
+      startX: 0,
+      startY: 0,
+      endX: 10,
+      endY: 10
+    }
+
+    this.cameraBounds = {
+      startX: 0,
+      startY: 0,
+      endX: 10,
+      endY: 10
+    }
+
+    this.initImages()
+    //this.getImages()
+    this.initGrid()
+
+    if (LOAD_DEFAULT_LEVEL) {
+      this.loadDefaultLevel()
+    } else {
+      Decor.lastInstance = this
+      this.loadCurrentLevel()
+    }
+  }
+
+  loadCurrentLevel () {
+    let currentLevelFile =
+      LEVEL_DATA_PREFIX + this.game.level + LEVEL_DATA_SUFFIX
+    Utils.loadFileAsText(currentLevelFile).then(
+      function (value) {
+        let grid = Utils.stringToGrid(value)
+
+        //console.log(grid)
+        if (grid != undefined && grid != null && grid.length != 0) {
+          Decor.grid = grid
+          //Tilegrid.lastInstance.gridDataToUnitsList()
+        }
+      },
+      function (error) {
+        console.log('Load default level failed.')
+        console.log(error)
+      }
+    )
+  }
+
+  loadDefaultLevel () {
+    Utils.loadFileAsText(DEFAULT_LEVEL_DATA_URL).then(
+      function (value) {
+        let grid = Utils.stringToGrid(value)
+
+        //console.log(grid)
+        if (grid != undefined && grid != null && grid.length != 0) {
+          Decor.grid = grid
+          Decor.lastInstance.gridDataToUnitsList()
+        }
+      },
+      function (error) {
+        console.log('Load default level failed.')
+        console.log(error)
+      }
+    )
+  }
+
+  initGrid () {
+    Decor.grid = Utils.fillArray(tilesX, tilesY, DEFAULT_GROUND)
+  }
+
+  initImages () {
+    let sheet = new Image()
+    let len = 0
+    sheet.src = '/images/decor.png'
+    sheet = sheet
+    let images1 = null
+    sheet.onload = () => {
+      // prevent these from running until input image is loaded
+      this.image = Utils.getSubImage(sheet, 0, 0, 100, 100)
+      images1 = Utils.cutSpriteSheet(sheet, 4, 4, 100, 100)
+      for (let i = 0; i < 0 + images1.length; i++) {
+        this.images[i + 0] = images1[i]
+      }
+    }
+
+    // let sheet2 = new Image()
+    // let images2 = []
+    // sheet2.src = '/images/wallTile.png'
+
+    // sheet2.onload = () => {
+    //   images2 = Utils.cutSpriteSheet(sheet2, 4, 4, 100, 100)
+    //   for (let i = 0; i < images2.length; i++) {
+    //     images2[i].solid = true
+    //     Tilegrid.solidArr[i + 16] = true
+    //     this.images[i + 16] = images2[i]
+    //   }
+    // }
+
+    // let sheet3 = new Image()
+    // let images3 = []
+    // sheet3.src = '/images/shelfTile.png'
+
+    // sheet3.onload = () => {
+    //   images3 = Utils.cutSpriteSheet(sheet3, 4, 4, 100, 100)
+    //   for (let i = 0; i < images3.length; i++) {
+    //     images3[i].solid = true
+    //     Tilegrid.solidArr[i + 32] = true
+    //     this.images[i + 32] = images3[i]
+    //   }
+    // }
+  }
+
+  draw1 () {
+    let bounds = this.game.tilegrid.bounds
+    //console.log(bounds)
+    for (let y = bounds.startY; y <= this.bounds.endY; y++) {
+      for (let x = bounds.startX; x <= this.bounds.endX; x++) {
+        let screenX = x * this.tileSize - this.game.cameraX
+        let screenY = y * this.tileSize - this.game.cameraY
+        let kind = Decor.grid[y][x]
+        let image = this.images[kind]
+        if (null == image || kind == -1) continue
+
+        this.game.ctx.drawImage(
+          image,
+          screenX,
+          screenY,
+          this.tileSize,
+          this.tileSize
+        )
+      }
+    }
+  }
+
+  draw () {
+    let startX = this.game.tilegrid.bounds.startX
+    let startY = this.game.tilegrid.bounds.startY
+    let endX = this.game.tilegrid.bounds.endX
+    let endY = this.game.tilegrid.bounds.endY
+    //console.log(bounds)
+    for (let y = startY; y <= endY; y++) {
+      for (let x = startX; x <= endX; x++) {
+        let screenX = x * this.tileSize - this.game.cameraX
+        let screenY = y * this.tileSize - this.game.cameraY
+        let kind = Decor.grid[y][x]
+        let image = this.images[kind]
+        if (null == image || kind == -1) continue
+
+        this.game.ctx.drawImage(
+          image,
+          screenX,
+          screenY,
+          this.tileSize,
+          this.tileSize
+        )
+      }
+    }
+  }
+
+  editTile (gridX, gridY, kind) {
+    if (
+      gridX >= 0 &&
+      gridX < Decor.grid.length &&
+      gridY >= 0 &&
+      gridY < Decor.grid[0].length &&
+      null != this.images[kind]
+    ) {
+      Decor.grid[gridY][gridX] = kind
+      console.log(`edit decor tileX${gridX}, tileY${gridY} kind:${kind}`)
+    }
+  }
+
+  delTile (gridX, gridY) {
+    if (
+      gridX >= 0 &&
+      gridX < Decor.grid.length &&
+      gridY >= 0 &&
+      gridY < Decor.grid[0].length
+    ) {
+      Decor.grid[gridY][gridX] = DEFAULT_GROUND
+      console.log(
+        `edit decor tileX${gridX}, tileY${gridY} kind:${DEFAULT_GROUND}`
+      )
+    }
+  }
+
+  update () {}
+}

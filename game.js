@@ -12,6 +12,8 @@ import { Splat } from './splat.js'
 import { Pickup } from './pickup.js'
 import { Sound } from './sound.js'
 import { Trigger } from './trigger.js'
+import { Brain } from './brain.js'
+import { Decor } from './decor.js'
 import * as Utils from './utils.js'
 ;('use strict')
 
@@ -68,10 +70,12 @@ export class Game {
     this.entity = null
     this.swoosh = null
     this.pathfind = null
+    this.brain = null
     this.puckup = null
     this.collision = null
     this.splat = null
     this.ctx = null
+    this.decor = null
     this.sound = null
     this.game = null
     this.rastertext = null
@@ -110,6 +114,8 @@ window.onload = function () {
   game.input = new Input(game)
   game.collision = new Collision(game)
   game.tilegrid = new Tilegrid(game)
+  game.decor = new Decor(game)
+  game.brain = new Brain(game)
   game.swoosh = new Swoosh(game)
   game.editor = new Editor(game)
   game.entity = new Entity(game)
@@ -129,16 +135,19 @@ window.onload = function () {
 
   requestAnimationFrame(draw)
   let uinterval = setInterval(update, msPerTick)
+  board.click()
 }
 
 function update () {
   game.player.update()
+  game.brain.update()
   game.tilegrid.update()
   game.swoosh.update()
   game.entity.update()
   game.pathfind.update()
   game.input.update()
   game.hud.update()
+  game.decor.update()
   game.rastertext.update()
   game.splat.update()
   game.pickup.update()
@@ -158,6 +167,7 @@ function draw () {
   if (game.framePacer()) {
     context.clearRect(0, 0, board.width, board.height) // clear previous frame
     game.tilegrid.draw()
+    game.decor.draw()
     game.swoosh.draw()
     game.splat.draw()
     game.pickup.draw()

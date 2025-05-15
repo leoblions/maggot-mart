@@ -10,7 +10,9 @@ const amountOfPictures = 32
 const DEFAULT_GROUND = 0
 const OOB_TILE_KIND = 0
 const DEFAULT_LEVEL_DATA_URL = '/data/level0.txt'
-const LOAD_DEFAULT_LEVEL = true
+const LEVEL_DATA_PREFIX = '/data/level'
+const LEVEL_DATA_SUFFIX = '.txt'
+const LOAD_DEFAULT_LEVEL = false
 const TILE_TYPE_AMOUNT = 48
 
 export class Tilegrid {
@@ -47,23 +49,52 @@ export class Tilegrid {
     this.initImages()
     //this.getImages()
     this.initGrid()
-    if (LOAD_DEFAULT_LEVEL) {
-      Utils.loadFileAsText(DEFAULT_LEVEL_DATA_URL).then(
-        function (value) {
-          let grid = Utils.stringToGrid(value)
 
-          //console.log(grid)
-          if (grid != undefined && grid != null && grid.length != 0) {
-            Tilegrid.grid = grid
-          }
-        },
-        function (error) {
-          console.log('Load default level failed.')
-          console.log(error)
-        }
-      )
+    if (LOAD_DEFAULT_LEVEL) {
+      this.loadDefaultLevel()
+    } else {
+      Tilegrid.lastInstance = this
+      this.loadCurrentLevel()
     }
     this.adjustBounds()
+  }
+
+  loadCurrentLevel () {
+    let currentLevelFile =
+      LEVEL_DATA_PREFIX + this.game.level + LEVEL_DATA_SUFFIX
+    Utils.loadFileAsText(currentLevelFile).then(
+      function (value) {
+        let grid = Utils.stringToGrid(value)
+
+        //console.log(grid)
+        if (grid != undefined && grid != null && grid.length != 0) {
+          Tilegrid.grid = grid
+          //Tilegrid.lastInstance.gridDataToUnitsList()
+        }
+      },
+      function (error) {
+        console.log('Load default level failed.')
+        console.log(error)
+      }
+    )
+  }
+
+  loadDefaultLevel () {
+    Utils.loadFileAsText(DEFAULT_LEVEL_DATA_URL).then(
+      function (value) {
+        let grid = Utils.stringToGrid(value)
+
+        //console.log(grid)
+        if (grid != undefined && grid != null && grid.length != 0) {
+          Trigger.grid = grid
+          Tilegrid.lastInstance.gridDataToUnitsList()
+        }
+      },
+      function (error) {
+        console.log('Load default level failed.')
+        console.log(error)
+      }
+    )
   }
 
   tileSolid (tileX, tileY) {
@@ -94,8 +125,8 @@ export class Tilegrid {
   }
 
   adjustBounds () {
-    let pTileX = Math.round(this.game.player.worldX / this.tileSize)
-    let pTileY = Math.round(this.game.player.worldY / this.tileSize)
+    let pTileX = Math.floor(this.game.player.worldX / this.tileSize)
+    let pTileY = Math.floor(this.game.player.worldY / this.tileSize)
     this.bounds.startX = Math.max(0, pTileX - tileDrawDist)
     this.bounds.startY = Math.max(0, pTileY - tileDrawDist)
     this.bounds.endX = Math.min(tilesX - 1, pTileX + tileDrawDist)
@@ -121,7 +152,7 @@ export class Tilegrid {
 
     let sheet2 = new Image()
     let images2 = []
-    sheet2.src = '/images/wallTile1.png'
+    sheet2.src = '/images/wallTile.png'
 
     sheet2.onload = () => {
       images2 = Utils.cutSpriteSheet(sheet2, 4, 4, 100, 100)
@@ -165,6 +196,15 @@ export class Tilegrid {
     }
   }
 
+  centerCamera () {
+    this.game.cameraX = Math.floor(
+      this.game.player.worldX - this.game.board.width / 2
+    )
+    this.game.cameraY = Math.floor(
+      this.game.player.worldY - this.game.board.height / 2
+    )
+  }
+
   draw () {
     //this.game.ctx.drawImage(this.image, 0, 0, 100, 100)
 
@@ -173,8 +213,8 @@ export class Tilegrid {
     }
     let bounds = this.bounds
     //console.log(bounds)
-    for (let y = bounds.startY; y < this.bounds.endY; y++) {
-      for (let x = bounds.startX; x < this.bounds.endX; x++) {
+    for (let y = bounds.startY; y <= this.bounds.endY; y++) {
+      for (let x = bounds.startX; x <= this.bounds.endX; x++) {
         let screenX = x * this.tileSize - this.game.cameraX
         let screenY = y * this.tileSize - this.game.cameraY
         let kind = Tilegrid.grid[y][x]
@@ -233,6 +273,18 @@ export class Tilegrid {
     ) {
       Tilegrid.grid[gridY][gridX] = kind
       console.log(`edit tileX${gridX}, tileY${gridY} kind:${kind}`)
+    }
+  }
+  delTile (gridX, gridY) {
+    if (
+      gridX >= 0 &&
+      gridX < Decor.grid.length &&
+      gridY >= 0 &&
+      gridY < Decor.grid[0].length &&
+      null != this.images[kind]
+    ) {
+      Decor.grid[gridY][gridX] = DEFAULT_GROUND
+      console.log(`edit tilegrid tileX${gridX}, tileY${gridY} kind:${kind}`)
     }
   }
 
