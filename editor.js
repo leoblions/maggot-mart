@@ -73,7 +73,7 @@ export class Editor {
     })
     const spawner = document.getElementById('spawner')
     spawner.addEventListener('click', () => {
-      Entity.delete = !Entity.delete
+      Entity.spawner = !Entity.spawner
       //Editor.setEditString()
       const spawner = document.getElementById('spawner')
       spawner.innerText = Entity.spawner ? 'Spawner ON' : 'Spawner OFF'

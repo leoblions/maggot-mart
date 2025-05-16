@@ -11,6 +11,7 @@ const COLL_HEIGHT = 80
 const FRAME_PERIOD = 120
 const SPRITES_PER_DIRECTION = 6
 const TAKE_DAMAGE_RATE_MS = 400
+const PLAYER_SPLAT_KIND = 0
 
 export const dpadStart = {
   up: false,
@@ -103,7 +104,7 @@ export class Player {
     )
   }
 
-  swooshDirection () {
+  projectileDirection () {
     switch (this.direction) {
       case 'u':
         return 0
@@ -143,12 +144,20 @@ export class Player {
       this.speed = WALK_SPEED
     }
     if (keys['f'] == true) {
-      this.game.swoosh.addUnit(this.worldX, this.worldY, this.swooshDirection())
+      this.game.projectile.addUnit(
+        this.worldX,
+        this.worldY,
+        this.projectileDirection()
+      )
       this.game.sound.playSoundByName('spray1')
     }
 
     if (keys['e'] == true) {
-      this.game.entity.addUnit(this.worldX, this.worldY, this.swooshDirection())
+      this.game.entity.addUnit(
+        this.worldX,
+        this.worldY,
+        this.projectileDirection()
+      )
     }
 
     if (up && !down && !collSides[0]) {
@@ -189,6 +198,12 @@ export class Player {
       this.game.health = newhealth > 0 ? newhealth : 0
       this.game.hud.updateHealthbarBlankingRect(newhealth)
       this.hitCounter = 0
+
+      let splat = this.game.splat.addUnit(
+        this.worldX,
+        this.worldY,
+        PLAYER_SPLAT_KIND
+      )
     }
   }
 

@@ -4,12 +4,13 @@ const MAX_UNITS = 10
 const SPRITE_WIDTH = 100
 const SPRITE_HEIGHT = 100
 const UNIT_LIFE = 120
-const SWOOSH_RATE_MS = 800
-const SWOOSH_SPEED = 2
+const PROJECTILE_RATE_MS = 800
+const PROJECTILE_SPEED = 2
 const CHANGE_IMAGE_EVERY = 5
 const ENTITY_HIT_OFFSET = 50
 const DAMAGE_DIST = 50
 const ENTITY_SPLAT_KIND = 4
+const HITBOX_OFFSET = 25
 
 class Unit {
   constructor (worldX, worldY, kind) {
@@ -24,32 +25,32 @@ class Unit {
     this.velY = 0
     switch (this.kind) {
       case 0:
-        this.velY = -Swoosh.speed
+        this.velY = -Projectile.speed
         break
       case 1:
-        this.velY = Swoosh.speed
+        this.velY = Projectile.speed
         this.imageID += 8
         break
       case 2:
-        this.velX = -Swoosh.speed
+        this.velX = -Projectile.speed
         this.imageID += 16
         break
       case 3:
-        this.velX = Swoosh.speed
+        this.velX = Projectile.speed
         this.imageID += 24
         break
     }
   }
 }
 
-export class Swoosh {
-  static speed = SWOOSH_SPEED
+export class Projectile {
+  static speed = PROJECTILE_SPEED
   static animateSpeed = 60
   constructor (game) {
     this.game = game
     this.images = null
     this.units = new Array(MAX_UNITS)
-    this.swooshPacer = Utils.createMillisecondPacer(SWOOSH_RATE_MS)
+    this.swooshPacer = Utils.createMillisecondPacer(PROJECTILE_RATE_MS)
     this.initImages()
   }
 
@@ -113,8 +114,8 @@ export class Swoosh {
     for (const entity of this.game.entity.units) {
       //debugger
       if (entity?.constructor.name == 'Unit' && entity.active) {
-        let entX = ENTITY_HIT_OFFSET + entity.worldX
-        let entY = ENTITY_HIT_OFFSET + entity.worldY
+        let entX = ENTITY_HIT_OFFSET + entity.worldX - HITBOX_OFFSET
+        let entY = ENTITY_HIT_OFFSET + entity.worldY - HITBOX_OFFSET
         let dX = Math.abs(entX - unit.worldX)
         let dY = Math.abs(entY - unit.worldY)
         if (dX < DAMAGE_DIST && dY < DAMAGE_DIST) {

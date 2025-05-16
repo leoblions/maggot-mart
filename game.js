@@ -4,7 +4,7 @@ import { Input } from './input.js'
 import { Editor } from './editor.js'
 import { Collision } from './collision.js'
 import { Hud } from './hud.js'
-import { Swoosh } from './swoosh.js'
+import { Projectile } from './projectile.js'
 import { Entity } from './entity.js'
 import { Pathfind } from './pathfind.js'
 import { Rastertext } from './rastertext.js'
@@ -42,7 +42,7 @@ screenY = worldY - cameraY
 //   editor: null,
 //   input: null,
 //   entity: null,
-//   swoosh: null,
+//   projectile: null,
 //   pathfind: null,
 //   collision: null,
 //   ctx: null,
@@ -68,7 +68,7 @@ export class Game {
     this.editor = null
     this.input = null
     this.entity = null
-    this.swoosh = null
+    this.projectile = null
     this.pathfind = null
     this.brain = null
     this.puckup = null
@@ -116,7 +116,7 @@ window.onload = function () {
   game.tilegrid = new Tilegrid(game)
   game.decor = new Decor(game)
   game.brain = new Brain(game)
-  game.swoosh = new Swoosh(game)
+  game.projectile = new Projectile(game)
   game.editor = new Editor(game)
   game.entity = new Entity(game)
   game.splat = new Splat(game)
@@ -142,7 +142,7 @@ function update () {
   game.player.update()
   game.brain.update()
   game.tilegrid.update()
-  game.swoosh.update()
+  game.projectile.update()
   game.entity.update()
   game.pathfind.update()
   game.input.update()
@@ -168,7 +168,7 @@ function draw () {
     context.clearRect(0, 0, board.width, board.height) // clear previous frame
     game.tilegrid.draw()
     game.decor.draw()
-    game.swoosh.draw()
+    game.projectile.draw()
     game.splat.draw()
     game.pickup.draw()
     game.player.draw()
