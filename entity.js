@@ -61,6 +61,7 @@ class Unit {
 }
 
 export class Entity {
+  static imagesLoaded = false
   static speed = ENTITY_SPEED
   static animateSpeed = 60
   static spawner = false
@@ -88,6 +89,7 @@ export class Entity {
         this.imagesR = Utils.applyFunctionToImageArray(output, Utils.flipImageH)
 
         //this.images = this.imagesL.concat(this.imagesR)
+        Entity.imagesLoaded = true
       })
       // this.imagesR = Utils.applyFunctionToImageArray(
       //   this.imagesL,
@@ -269,6 +271,9 @@ export class Entity {
   }
 
   update () {
+    if (!Entity.imagesLoaded) {
+      this.initImages()
+    }
     let changeFrame = this.changeFramePacer()
     Entity.spawner && this.spawnUnit()
     for (let unit of this.units) {

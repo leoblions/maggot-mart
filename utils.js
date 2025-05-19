@@ -80,6 +80,18 @@ export function getCookieValueFromCookieName (name) {
   return null
 }
 
+/**
+ * Generate a random number within a range, inclusive of the max bound
+ *
+ * @param {number} min - lowest number the function can return
+ * @param {number} max - highest number the function can return
+ * @returns {number} - a random number
+ */
+export function randRange (min, max) {
+  let difference = max - min
+  return Math.round(Math.random() * difference) + min
+}
+
 export function stringToGrid (instring) {
   //debugger
   //let fixNewlineChar = instring.replace('\\n', '\n')

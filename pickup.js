@@ -15,6 +15,7 @@ const MAX_KIND = 35
 const CULL_DISTANCE = 500
 const TOUCH_PLAYER_RANGE = 50
 const CHECK_TOUCH_PERIOD = 100
+const ADD_OBJECTIVE_ITEM_PERIOD = 1000
 const OBJECTIVE_ITEM_SLOT = 0
 const RAND_ITEM_MIN_INDEX = 1 //slot zero is reserved for objective items
 
@@ -27,6 +28,34 @@ const BOX_KIND_MAX_INDEX = 45
 const SPRAY_KIND_MIN_INDEX = 46
 const SPRAY_KIND_MAX_INDEX = 50
 
+const KEY_KIND_MIN_INDEX = 52
+const KEY_KIND_MAX_INDEX = 61
+
+const boxSpawnPoints = [
+  [1, 2, 17],
+  [1, 4, 17],
+  [1, 6, 17],
+  [1, 8, 17]
+]
+const keySpawnPoints = [
+  [1, 2, 17],
+  [1, 4, 17],
+  [1, 6, 17],
+  [1, 8, 17]
+]
+const trapSpawnPoints = [
+  [1, 2, 17],
+  [1, 4, 17],
+  [1, 6, 17],
+  [1, 8, 17]
+]
+const spraySpawnPoints = [
+  [1, 2, 17],
+  [1, 4, 17],
+  [1, 6, 17],
+  [1, 8, 17]
+]
+
 class Unit {
   constructor (worldX, worldY, kind) {
     this.kind = kind // 0 up / 1 down / 2 left / 3 right
@@ -35,10 +64,10 @@ class Unit {
     this.active = true
     this.visible = true // false if off screen
     this.frame = 0
+    this.level = 0
     this.frameMin = 0
     this.frameMax = 0
-    this.currentObjectiveItem = 36
-    this.spawnObjectiveItem = true
+
     this.velX = 0
     this.velY = 0
   }
@@ -52,6 +81,12 @@ class Unit {
 export class Pickup {
   static sgame = null
   constructor (game) {
+    this.objectiveCategory = 0 // 0 box, 1 spray, 2 key, 3 trap
+    this.addObjectiveItemEnabled = false
+    this.currentObjectiveItem = 36
+    this.spawnObjectiveItem = true
+    this.sprays = 0
+    this.boxes = 0
     this.game = game
     Pickup.sgame = game
     this.images = null
@@ -59,6 +94,9 @@ export class Pickup {
     this.randomPlacePacer = Utils.createMillisecondPacer(PICKUP_RATE)
     this.updateCullPacer = Utils.createMillisecondPacer(UPDATE_CULL_PERIOD)
     this.checkTouchPacer = Utils.createMillisecondPacer(CHECK_TOUCH_PERIOD)
+    this.addObjectiveItemPacer = Utils.createMillisecondPacer(
+      ADD_OBJECTIVE_ITEM_PERIOD
+    )
     this.initImages()
   }
 
@@ -85,6 +123,7 @@ export class Pickup {
     sheet = sheet
     let images1 = null
     sheet.onload = () => {
+      // 0-35 fruit
       images1 = Utils.cutSpriteSheet(sheet, 6, 6, 100, 100)
       for (let i = 0; i < 0 + images1.length; i++) {
         this.images[i + 0] = images1[i]
@@ -96,11 +135,30 @@ export class Pickup {
     sheet2.src = '/images/boxescans.png'
 
     sheet2.onload = () => {
+      // 36 - 45 boxes
+      // 46 - 50 spraycans
+      // 51 mousetrap
+
       images2 = Utils.cutSpriteSheet(sheet2, 4, 4, 100, 100)
       for (let i = 0; i < images2.length; i++) {
         images2[i].solid = true
 
         this.images[i + BOX_KIND_MIN_INDEX] = images2[i]
+      }
+    }
+
+    let sheet3 = new Image()
+    let images3 = []
+    sheet3.src = '/images/keys.png'
+
+    sheet3.onload = () => {
+      // 52 - 61 boxes
+
+      images3 = Utils.cutSpriteSheet(sheet3, 4, 4, 100, 100)
+      for (let i = 0; i < images3.length; i++) {
+        images3[i].solid = true
+
+        this.images[i + KEY_KIND_MIN_INDEX] = images3[i]
       }
     }
   }
@@ -163,12 +221,29 @@ export class Pickup {
       let element = this.units[i]
       if (!(element instanceof Unit) || !element.active) {
         newUnit = new Unit(worldX, worldY, kind)
+        newUnit.level = this.game.level
 
         this.units[i] = newUnit
         return newUnit
       }
     }
     return null
+  }
+
+  removeUnitsLevelTransition (destinationLevel) {
+    debugger
+    let newUnits = []
+    for (let i = 0; i < this.units.length; i++) {
+      let element = this.units[i]
+      if (
+        element instanceof Unit &&
+        element.level == destinationLevel &&
+        element.active
+      ) {
+        newUnits.push(this.units[i])
+      }
+    }
+    this.units = newUnits
   }
 
   addUnit (worldX, worldY, kind) {
@@ -184,16 +259,73 @@ export class Pickup {
     return null
   }
 
-  addObjectiveUnit () {
-    let kind = this.currentObjectiveItem
+  /**
+   * Given an item category from the class, select an item kind
+   * 0 box, 1 spray, 2 key, 3 trap
+   * @return{number} - item kind
+   */
+  selectObjectiveItemKindFromCurrentCategory () {
+    // 0 box, 1 spray, 2 key, 3 trap
+    let kind = 0
+    switch (this.objectiveCategory) {
+      case 0:
+        kind = Utils.randRange(BOX_KIND_MIN_INDEX, BOX_KIND_MAX_INDEX)
+        break
+      case 1:
+        kind = Utils.randRange(SPRAY_KIND_MIN_INDEX, SPRAY_KIND_MAX_INDEX)
+        break
+      case 2:
+        kind = Utils.randRange(KEY_KIND_MIN_INDEX, KEY_KIND_MAX_INDEX)
+        break
+      case 3:
+        kind = 51
+        break
+    }
+    return kind
+  }
 
-    let worldX,
-      worldY = this.getRandomFloorCell()
-    let newUnit = (this.units[OBJECTIVE_ITEM_SLOT] = new Unit(
-      worldX,
-      worldY,
-      kind
-    ))
+  selectObjectiveItemLocationFromCurrentCategory () {
+    // 0 box, 1 spray, 2 key, 3 trap
+    let gridLocation = null
+    let locationCollection = null
+    //debugger
+    switch (this.objectiveCategory) {
+      case 0:
+        locationCollection = boxSpawnPoints
+        break
+      case 1:
+        locationCollection = spraySpawnPoints
+        break
+      case 2:
+        locationCollection = keySpawnPoints
+        break
+      case 3:
+        locationCollection = trapSpawnPoints
+        break
+      default:
+        return null
+    }
+    let max = locationCollection.length - 1
+    let index = Utils.randRange(0, max)
+    return locationCollection[index]
+  }
+
+  addObjectiveUnit () {
+    let newUnit = null
+
+    let currentObjItem = this.units[OBJECTIVE_ITEM_SLOT]
+    if (currentObjItem == undefined || currentObjItem?.active == false) {
+      //debugger
+      let kind = this.selectObjectiveItemKindFromCurrentCategory()
+      let [level, gridX, gridY] =
+        this.selectObjectiveItemLocationFromCurrentCategory()
+
+      let worldX = gridX * this.game.tilegrid.tileSize
+      let worldY = gridY * this.game.tilegrid.tileSize
+
+      newUnit = this.units[OBJECTIVE_ITEM_SLOT] = new Unit(worldX, worldY, kind)
+      newUnit.level = level
+    }
 
     return newUnit
   }
@@ -241,10 +373,28 @@ export class Pickup {
     }
   }
 
+  collectItemSpecialActions (unit) {
+    if (unit.active) {
+      if (unit.kind >= BOX_KIND_MIN_INDEX && unit.kind <= BOX_KIND_MAX_INDEX) {
+        this.boxes += 1
+        console.log('Boxes ' + this.boxes)
+      }
+      if (
+        unit.sprays >= SPRAY_KIND_MIN_INDEX &&
+        unit.kind <= SPRAY_KIND_MAX_INDEX
+      ) {
+        this.sprays += 1
+      }
+    }
+  }
+
   update () {
     let checkVisible = this.updateCullPacer()
     let checkTouched = this.checkTouchPacer()
     this.randomPlacePacer() && this.addRandomUnit()
+    if (this.addObjectiveItemEnabled && this.addObjectiveItemPacer()) {
+      this.addObjectiveUnit()
+    }
 
     for (let element of this.units) {
       if (element instanceof Unit && element.active) {
@@ -255,6 +405,7 @@ export class Pickup {
           element.visible = element.checkRange(CULL_DISTANCE)
         }
         if (checkTouched && element.checkRange(TOUCH_PLAYER_RANGE)) {
+          this.collectItemSpecialActions(element)
           element.active = false
           this.game.sound.playSoundByName('chime1')
           this.game.score += 1

@@ -11,7 +11,7 @@ const COLL_HEIGHT = 80
 const FRAME_PERIOD = 120
 const SPRITES_PER_DIRECTION = 6
 const TAKE_DAMAGE_RATE_MS = 400
-const PLAYER_SPLAT_KIND = 0
+const PLAYER_SPLAT_KIND = 5
 
 export const dpadStart = {
   up: false,
@@ -159,6 +159,7 @@ export class Player {
         this.projectileDirection()
       )
     }
+    //debugger
 
     if (up && !down && !collSides[0]) {
       this.velY = -this.speed
@@ -182,6 +183,7 @@ export class Player {
     } else {
       this.velX = 0
     }
+    //this.game.input.keys = []
     this.worldX += this.velX
     this.worldY += this.velY
   }

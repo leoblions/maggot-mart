@@ -11,6 +11,7 @@ const LEVEL_DATA_PREFIX = '/data/actionTable'
 const LEVEL_DATA_SUFFIX = '.txt'
 const LOAD_DEFAULT_LEVEL = false
 const BLOCK_DUPLICATE_CONSECUTIVE_ACTIONS = true
+
 /**
  * Data format:
  * Actions:
@@ -28,6 +29,15 @@ const BLOCK_DUPLICATE_CONSECUTIVE_ACTIONS = true
  *
  */
 
+/**
+ * Stage 0
+ * stock the shelves with boxes
+ * Stage 1
+ * Clean up mouse traps
+ * Stage 2
+ * Spray insect repellant
+ *
+ */
 class Action {
   constructor (actionID, nextActionID, enabled, functionID, functionArg) {
     //debugger
@@ -112,17 +122,19 @@ export class Brain {
   }
 
   warp (warpID) {
-    const [level, gridX, gridY] = this.warps[warpID] ?? [-1, -1, -1]
-    if (level == -1) {
+    const [destinationLevel, gridX, gridY] = this.warps[warpID] ?? [-1, -1, -1]
+    if (destinationLevel == -1) {
       console.error('Invalid level data for warpID ' + warpID)
     }
-    if (level == this.game.level) {
+    if (destinationLevel == this.game.level) {
       this.movePlayer(gridX, gridY)
       this.game.tilegrid.centerCamera()
     } else {
-      this.game.level = level
+      this.game.level = destinationLevel
       this.movePlayer(gridX, gridY)
-      this.switchLevelTo(level)
+      this.switchLevelTo(destinationLevel)
+
+      this.game.pickup.removeUnitsLevelTransition(destinationLevel)
     }
   }
 
@@ -151,5 +163,6 @@ export class Brain {
 
   update () {
     this.cycleFlagsPacer() && this.dequeueAction()
+    this.game.pickup.addObjectiveItemEnabled = true
   }
 }

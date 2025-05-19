@@ -44,19 +44,20 @@ class Unit {
 }
 
 export class Projectile {
+  static imagesLoaded = false
   static speed = PROJECTILE_SPEED
   static animateSpeed = 60
   constructor (game) {
     this.game = game
     this.images = null
     this.units = new Array(MAX_UNITS)
-    this.swooshPacer = Utils.createMillisecondPacer(PROJECTILE_RATE_MS)
+    this.projectilePacer = Utils.createMillisecondPacer(PROJECTILE_RATE_MS)
     this.initImages()
   }
 
   async initImages () {
     let sheet = new Image()
-    sheet.src = './images/swoosh1m.png'
+    sheet.src = './images/projectile1m.png'
     sheet.onload = () => {
       this.ready = true
       let imagesU, imagesD, imagesL, imagesR
@@ -68,7 +69,8 @@ export class Projectile {
         imagesL = Utils.rotateImageArray(imagesU, 270)
         imagesR = Utils.rotateImageArray(imagesU, 90)
         this.images = imagesU.concat(imagesD, imagesL, imagesR)
-        console.log('swoosh images loaded')
+        Projectile.imagesLoaded = true
+        console.log('projectile images loaded')
       })
     }
   }
@@ -77,7 +79,7 @@ export class Projectile {
     for (let i = 0; i < MAX_UNITS; i++) {
       let element = this.units[i]
       if (!(element instanceof Unit) || !element.active) {
-        if (this.swooshPacer()) {
+        if (this.projectilePacer()) {
           this.units[i] = new Unit(worldX, worldY, kind)
           console.log('added unit')
           break
@@ -136,6 +138,9 @@ export class Projectile {
   }
 
   update () {
+    if (!Projectile.imagesLoaded) {
+      this.initImages()
+    }
     for (let element of this.units) {
       if (element instanceof Unit && element.active) {
         this.checkUnitHitEntity(element)

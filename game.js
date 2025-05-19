@@ -8,6 +8,7 @@ import { Projectile } from './projectile.js'
 import { Entity } from './entity.js'
 import { Pathfind } from './pathfind.js'
 import { Rastertext } from './rastertext.js'
+import { Menu } from './menu.js'
 import { Splat } from './splat.js'
 import { Pickup } from './pickup.js'
 import { Sound } from './sound.js'
@@ -24,6 +25,8 @@ const NO_SCROLL = true
 const TPS_COUNTER_INTERVAL_SEC = 5
 const FRAME_PERIOD_MS = Math.floor(1000 / 60)
 const START_HEALTH = 100
+
+// game modes
 
 /*
 
@@ -58,7 +61,20 @@ screenY = worldY - cameraY
 export let game
 
 export class Game {
+  static difficulty = 5
+  static godmode = false
+  static noclip = false
+  static volume = 5
+  // immutable "enum" of game modes
+  static modes = Object.freeze({
+    PLAY: 0,
+    MAINMENU: 1,
+    OPTIONS: 2,
+    PAUSED: 3,
+    TITLE: 4
+  })
   constructor () {
+    this.stage = 0
     this.cameraX = 0
     this.cameraY = 0
     this.tileSize = TILESIZE
@@ -76,8 +92,10 @@ export class Game {
     this.splat = null
     this.ctx = null
     this.decor = null
+    this.menu = null
     this.sound = null
     this.game = null
+    this.mode = Game.modes.PLAY
     this.rastertext = null
     this.boardWidth = null
     this.boardHeight = null
@@ -120,6 +138,7 @@ window.onload = function () {
   game.editor = new Editor(game)
   game.entity = new Entity(game)
   game.splat = new Splat(game)
+  game.menu = new Menu(game)
   game.pickup = new Pickup(game)
   game.rastertext = new Rastertext(game)
   game.sound = new Sound(this)
@@ -148,6 +167,8 @@ function update () {
   game.input.update()
   game.hud.update()
   game.decor.update()
+  game.menu.update()
+
   game.rastertext.update()
   game.splat.update()
   game.pickup.update()
@@ -171,6 +192,7 @@ function draw () {
     game.projectile.draw()
     game.splat.draw()
     game.pickup.draw()
+    game.menu.draw()
     game.player.draw()
     game.pathfind.draw()
     game.trigger.draw()

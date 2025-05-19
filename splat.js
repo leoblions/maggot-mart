@@ -52,10 +52,18 @@ class Unit {
         this.frame = Math.trunc(Math.random() * 15) + 12
 
         break
+      case 5:
+        //random static red puddle
+        this.frameMin = 0
+        this.frameMax = 11
+        //select a random red splat that stays the same
+        this.frame = Math.trunc(Math.random() * 10)
+
+        break
     }
   }
   updateFrame () {
-    if (this.kind != 4 && this.life % CHANGE_IMAGE_EVERY == 0) {
+    if (this.kind < 4 && this.life % CHANGE_IMAGE_EVERY == 0) {
       if (this.frame < this.frameMax) {
         this.frame += 1
       } else {
