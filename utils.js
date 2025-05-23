@@ -190,7 +190,7 @@ export function getSubImageNoAddElement (image, startX, startY, width, height) {
  * @returns {Array} rotated image array.
  */
 export function rotateImageArray (imageArray, degrees) {
-  console.log(typeof imageArray)
+  //console.log(typeof imageArray)
   if (!imageArray instanceof Array) {
     console.error('rotateImageArray: imageArray invalid data')
     return
@@ -566,7 +566,7 @@ export function downloadObject (obj, filename) {
   document.body.removeChild(elem)
 }
 
-function canvasToImage (canvas) {
+export function canvasToImage (canvas) {
   var image = new Image()
   image.src = canvas.toDataURL()
   return image

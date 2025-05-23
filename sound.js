@@ -14,11 +14,13 @@ const soundNames = [
 ]
 const fileExtension = '.ogg'
 const soundDirectory = './sound/'
+const DEFAULT_VOLUME = 0.5
 
 export class Sound {
   constructor () {
     this.map = {}
     this.sounds = this.initSounds()
+    this.volume = DEFAULT_VOLUME
   }
 
   initSounds () {
@@ -47,9 +49,11 @@ export class Sound {
   }
 
   playSound (soundID) {
+    this.sounds[soundID].volume = this.volume
     this.sounds[soundID].play()
   }
   loopSound (soundID) {
+    this.sounds[soundID].volume = this.volume
     this.sounds[soundID].loop = true
   }
   pauseSound (soundID) {

@@ -106,6 +106,35 @@ export class Game {
     this.objectiveTotal = 0
     this.objectiveComplete = 0
   }
+  requestStateChange (newState) {
+    if (this.stateChangePacer()) {
+      this.mode = newState
+    }
+  }
+
+  keyModeSelector () {
+    let keys = this?.input.keys
+    if (keys == undefined) {
+      return
+    }
+
+    if (keys['Escape'] == true) {
+      if (this.game.mode == Game.modes.PLAY) {
+        this.game.requestStateChange(Game.modes.MAINMENU)
+      } else if (this.game.mode == Game.modes.MAINMENU) {
+        this.game.requestStateChange(Game.modes.PLAY)
+      } else if (this.game.mode == Game.modes.PAUSED) {
+        this.game.requestStateChange(Game.modes.PLAY)
+      }
+    }
+    if (keys['p'] == true) {
+      if (this.game.mode == Game.modes.PLAY) {
+        this.game.requestStateChange(Game.modes.PAUSED)
+      } else if (this.game.mode == Game.modes.PAUSED) {
+        this.game.requestStateChange(Game.modes.PLAY)
+      }
+    }
+  }
 }
 
 //board
@@ -151,6 +180,7 @@ window.onload = function () {
   game.displayTPS = 0
   game.counterPacer = Utils.createMillisecondPacer(1000)
   game.framePacer = Utils.createMillisecondPacer(FRAME_PERIOD_MS)
+  game.stateChangePacer = new Utils.createMillisecondPacer(1000)
 
   requestAnimationFrame(draw)
   let uinterval = setInterval(update, msPerTick)
@@ -158,21 +188,26 @@ window.onload = function () {
 }
 
 function update () {
-  game.player.update()
-  game.brain.update()
-  game.tilegrid.update()
-  game.projectile.update()
-  game.entity.update()
-  game.pathfind.update()
   game.input.update()
-  game.hud.update()
-  game.decor.update()
-  game.menu.update()
+  if (game.mode == Game.modes.PLAY) {
+    game.player.update()
+    game.brain.update()
+    game.tilegrid.update()
+    game.projectile.update()
+    game.entity.update()
+    game.pathfind.update()
 
-  game.rastertext.update()
-  game.splat.update()
-  game.pickup.update()
-  game.trigger.update()
+    game.hud.update()
+    game.decor.update()
+
+    game.rastertext.update()
+    game.splat.update()
+    game.pickup.update()
+    game.trigger.update()
+  } else if (game.mode == Game.modes.MAINMENU) {
+    game.menu.update()
+  }
+
   game.tickCount += 1
   if (game.counterPacer()) {
     // Math.floor(game.tickCount / (TPS_COUNTER_INTERVAL_SEC*1000))
@@ -187,19 +222,23 @@ function draw () {
   requestAnimationFrame(draw)
   if (game.framePacer()) {
     context.clearRect(0, 0, board.width, board.height) // clear previous frame
-    game.tilegrid.draw()
-    game.decor.draw()
-    game.projectile.draw()
-    game.splat.draw()
-    game.pickup.draw()
-    game.menu.draw()
-    game.player.draw()
-    game.pathfind.draw()
-    game.trigger.draw()
-    game.entity.draw()
-    //top
-    game.hud.draw()
+    if (game.mode == Game.modes.PLAY) {
+      game.tilegrid.draw()
+      game.decor.draw()
+      game.projectile.draw()
+      game.splat.draw()
+      game.pickup.draw()
+      // game.menu.draw()
+      game.player.draw()
+      game.pathfind.draw()
+      game.trigger.draw()
+      game.entity.draw()
+      //top
+      game.hud.draw()
 
-    game.rastertext.draw()
+      game.rastertext.draw()
+    } else if (game.mode == Game.modes.MAINMENU) {
+      game.menu.draw()
+    }
   }
 }

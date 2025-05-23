@@ -10,7 +10,7 @@ const CHANGE_IMAGE_EVERY = 5
 const ENTITY_HIT_OFFSET = 50
 const DAMAGE_DIST = 50
 
-const ROWS = 6
+const ROWS = 5
 
 class Control {
   constructor (screenX, screenY, kind) {
@@ -20,6 +20,7 @@ class Control {
     this.width = 300
     this.height = 50
     this.frame = 0
+    this.image = null
     this.active = true
     this.textString = ''
   }
@@ -28,13 +29,16 @@ class Control {
 export class Menu {
   constructor (game) {
     this.game = game
+    this.imagesLoaded = false
     this.active = true
-    this.controlW = Math.floor(this.game.board.width / 4)
+    this.controlW = Math.floor(this.game.board.width / 3)
     this.controlH = Math.floor(this.game.board.height / 12)
-    this.startX = Math.floor(this.game.board.width / 2 - this.controlW / 2)
+    this.startX = Math.floor(
+      this.game.board.width / 2 - Math.floor(this.controlW / 2)
+    )
     this.cornerY = []
     this.startY = this.controlH * 3
-    this.spacingY = this.controlH
+    this.spacingY = Math.floor(this.controlH / 2)
     this.images = null
     this.controls = new Array(MAX_UNITS)
     this.mainControlls = []
@@ -46,15 +50,20 @@ export class Menu {
     this.initControls()
   }
 
-  async initImages () {
+  initImages () {
+    if (this.imagesLoaded) {
+      return
+    }
+
     let sheet = new Image()
     sheet.src = './images/buttonsC.png'
     sheet.onload = () => {
       this.ready = true
       let images, imagesD, imagesL, imagesR
       //promises
-      Utils.cutSpriteSheetCallback(sheet, 4, 1, 50, 300, output => {
+      Utils.cutSpriteSheetCallback(sheet, 1, 4, 300, 50, output => {
         this.images = output
+        this.imagesLoaded = true
 
         console.log('control images loaded')
       })
@@ -65,6 +74,10 @@ export class Menu {
     for (let i = 0; i < ROWS; i++) {
       let corner = Math.floor(i * (this.controlH + this.spacingY)) + this.startY
       this.cornerY.push(corner)
+      let newControl = new Control(this.startX, corner, 1)
+      newControl.width = this.controlW
+      newControl.height = this.controlH
+      this.controls.push(newControl)
     }
   }
 
@@ -84,6 +97,14 @@ export class Menu {
     return newControl
   }
 
+  handleClick (event, panelLoc) {
+    //console.log(event)
+    let gridLoc = this.game.editor.panelXYtoGridXY(
+      panelLoc.clickX,
+      panelLoc.clickY
+    )
+  }
+
   draw () {
     this.active ||
       (() => {
@@ -95,17 +116,18 @@ export class Menu {
       if (control instanceof Control && control.active) {
         // debugger
 
-        let image = this.images[control.frame]
-        if (image == null) {
+        if (this.images == null) {
           return
+        } else {
+          let image = this.images[control.frame]
+          this.game.ctx.drawImage(
+            image,
+            control.screenX,
+            control.screenY,
+            control.width,
+            control.height
+          )
         }
-        this.game.ctx.drawImage(
-          image,
-          control.screenX,
-          control.screenY,
-          SPRITE_WIDTH,
-          SPRITE_HEIGHT
-        )
       }
     }
   }

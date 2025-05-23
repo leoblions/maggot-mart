@@ -55,8 +55,12 @@ export class Projectile {
     this.initImages()
   }
 
-  async initImages () {
+  initImages () {
+    if (Projectile.imagesLoaded == true) {
+      return
+    }
     let sheet = new Image()
+
     sheet.src = './images/projectile1m.png'
     sheet.onload = () => {
       this.ready = true
@@ -139,7 +143,8 @@ export class Projectile {
 
   update () {
     if (!Projectile.imagesLoaded) {
-      this.initImages()
+      //this.initImages()
+      return
     }
     for (let element of this.units) {
       if (element instanceof Unit && element.active) {

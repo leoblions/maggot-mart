@@ -79,7 +79,10 @@ export class Entity {
     this.initImages()
   }
 
-  initImages () {
+  async initImages () {
+    if (this.ready) {
+      return
+    }
     let sheet = new Image()
     sheet.src = './images/bugsheet0.png'
     sheet.onload = () => {
@@ -272,7 +275,8 @@ export class Entity {
 
   update () {
     if (!Entity.imagesLoaded) {
-      this.initImages()
+      //this.initImages()
+      return
     }
     let changeFrame = this.changeFramePacer()
     Entity.spawner && this.spawnUnit()

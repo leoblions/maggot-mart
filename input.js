@@ -1,3 +1,4 @@
+import { Game } from './game.js'
 const LOG_CLICK_LOCATION = false
 export class Input {
   constructor (game) {
@@ -99,12 +100,59 @@ export class Input {
           'location ' + panelLoc.clickX + ' location ' + panelLoc.clickY
         )
       }
-      if (this.game.editor.enabled && this.clickIsInBounds(event)) {
-        this.game.editor.handleClick(event, panelLoc)
+      //editor clicks
+      // if (this.game.editor.enabled && this.clickIsInBounds(event)) {
+      //   this.game.editor.handleClick(event, panelLoc)
+      // }
+      //menu clicks
+      switch (this.game.mode) {
+        case Game.modes.MAINMENU:
+        case Game.modes.PAUSED:
+          this.game.menu.handleClick(event, panelLoc)
+          break
+        case Game.modes.PLAY:
+          if (this.game.editor.enabled && this.clickIsInBounds(event)) {
+            this.game.editor.handleClick(event, panelLoc)
+          }
+          break
+        default:
+          break
+      }
+    }
+    this.menuMotion() // menu activation keypresses
+
+    this.clicks = []
+  }
+
+  menuMotion () {
+    let keys = this.game.input.keys
+
+    if (keys['Escape'] == true) {
+      if (this.game.mode == Game.modes.PLAY) {
+        this.game.requestStateChange(Game.modes.MAINMENU)
+      } else if (this.game.mode == Game.modes.MAINMENU) {
+        this.game.requestStateChange(Game.modes.PLAY)
       }
     }
 
-    this.clicks = []
+    let up = keys['ArrowUp'] === true
+    let down = keys['ArrowDown'] === true
+    let left = keys['ArrowLeft'] === true
+    let right = keys['ArrowRight'] === true
+
+    if (keys['w'] === true) up = true
+    if (keys['s'] === true) down = true
+    if (keys['a'] === true) left = true
+    if (keys['d'] === true) right = true
+
+    if (keys['Shift'] == true) {
+    }
+    if (keys['f'] == true) {
+    }
+
+    if (keys['e'] == true) {
+    }
+    //debugger
   }
 
   // keydownActionClosure () {

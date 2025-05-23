@@ -42,6 +42,7 @@ export class Rastertext {
       //let imagesR = Utils.applyFunctionToImageArray(imagesL, Utils.flipImageH)
       this.images = font1
       console.log('font images loaded')
+      this.label1 = this.createLabel('THIS IS A TEST')
     }
   }
 
@@ -49,6 +50,42 @@ export class Rastertext {
     let unit = new Unit(screenX, screenY, content)
     this.units.push(unit)
     return unit
+  }
+
+  createLabel (text) {
+    //create blank image
+
+    text = text.toLowerCase()
+
+    const canvas = document.createElement('canvas')
+    canvas.id = Utils.getUnusedHTMLElementID()
+    canvas.width = (SPRITE_WIDTH * text.length) | 1
+    canvas.height = SPRITE_HEIGHT
+    let ctx = canvas.getContext('2d')
+    //convert letters to offset indices
+    let indices = []
+    for (const letter of text) {
+      let index = alphabet.indexOf(letter) ?? FAIL_INDEX
+      indices.push(index)
+    }
+    //draw subimages to new image
+    let drawX = 0
+    for (const index of indices) {
+      let currImage = this.images[index]
+      //debugger
+      if (currImage?.constructor.name == 'HTMLImageElement') {
+        ctx.drawImage(this.images[index], drawX, 0, SPRITE_WIDTH, SPRITE_HEIGHT)
+      }
+
+      drawX += SPRITE_WIDTH
+    }
+
+    document.body.appendChild(canvas)
+
+    let newimage = Utils.canvasToImage(canvas)
+
+    document.body.removeChild(canvas)
+    return newimage
   }
 
   drawUnit (unit) {
@@ -79,6 +116,8 @@ export class Rastertext {
         this.drawUnit(unit)
       }
     }
+    //debugger
+    //this.game.ctx.drawImage(this.label1, 100, 100, 200, 15)
   }
 
   update () {
