@@ -1,4 +1,5 @@
 import * as Utils from './utils.js'
+import * as Assets from './assets.js'
 
 const MAX_UNITS = 10
 const SPRITE_WIDTH = 100
@@ -15,9 +16,18 @@ const FRAMES_PER_KIND = 4
 const DAMAGE_TO_PLAYER = 4
 const PLAYER_TOUCH_OFFSET_X = 50
 const PLAYER_TOUCH_OFFSET_Y = 50
+const BUG_IMAGES_PER_ROW = 4
+const IMAGES_IN_BUG_SPRITESHEET = 16
 const ENABLE_SPAWNER = false
 const SPAWN_X = 1000
 const SPAWN_Y = 900
+/*
+Entity kinds
+0-7 enemy
+8 manager
+9 elliot
+
+*/
 
 class Unit {
   /**
@@ -26,12 +36,13 @@ class Unit {
    * @param {number} kind - kind of entity
    */
   constructor (worldX, worldY, kind) {
-    this.kind = kind // 0 up / 1 down / 2 left / 3 right
+    this.kind = kind // what kind of entity.  Each enemy and NPC type is a kind. Player is not an entity
     this.worldX = worldX
     this.worldY = worldY
     this.active = true
     this.speed = Entity.speed
-    this.imageID = 0
+    this.state = 'f' // s stand, f follow, a attack
+    this.imageID = 0 //which image to use for current frame, from array of images
     this.frameMin = 0
     this.frameMax = 0
     this.leftOfPlayer = true
@@ -39,11 +50,16 @@ class Unit {
     this.velX = 0
     this.velY = 0
     this.damageToPlayer = DAMAGE_TO_PLAYER
-    this.setFrameMinAndmax()
-    //this.spawnerPacer = Utils.createMillisecondPacer(SPAWN_RATE)
+    this.imageArray = null
+    if (this.kind < 8) {
+      this.imageArray = Entity.bugImages
+    } else if (this.kind < 9) {
+      this.imageArray = Entity.managerImages
+    }
+    //this.setFrameMinAndmax()
   }
   setFrameMinAndmax () {
-    //debugger
+    //do not use
     this.frameMin = FRAMES_PER_KIND * this.kind
     this.imageID = this.frameMin
     this.frameMax = FRAMES_PER_KIND * this.kind + FRAMES_PER_KIND - 1
@@ -61,10 +77,14 @@ class Unit {
 }
 
 export class Entity {
+  // class for managing enemies and NPCs
+
   static imagesLoaded = false
   static speed = ENTITY_SPEED
   static animateSpeed = 60
   static spawner = false
+  static bugImages
+  static managerImages
 
   constructor (game) {
     this.ready = false
@@ -79,7 +99,12 @@ export class Entity {
     this.initImages()
   }
 
-  async initImages () {
+  initImages () {
+    Entity.bugImages = Assets.bugsA
+    Entity.managerImages = Assets.managerImg
+  }
+
+  async initImagesO () {
     if (this.ready) {
       return
     }
@@ -137,7 +162,7 @@ export class Entity {
         let screenX = element.worldX - this.game.cameraX
         let screenY = element.worldY - this.game.cameraY
         // choose left or right images
-        let imageArray = element.leftOfPlayer ? this.imagesL : this.imagesR
+        let imageArray = element.imageArray
         let currImage = imageArray[element.imageID]
         //debugger
         if (currImage) {
@@ -255,10 +280,27 @@ export class Entity {
  * @param {Unit} unit - current entity unit
 
  */
-  unitAdvanceFrame (unit) {
+  entitySelectImage (unit) {
     if (unit.active) {
-      unit.imageID =
-        unit.imageID < unit.frameMax ? unit.imageID + 1 : unit.frameMin
+      let lastImageID = unit.imageID
+
+      if (unit.kind < 8) {
+        //bugs
+        let min = unit.kind * BUG_IMAGES_PER_ROW
+        let max = min + BUG_IMAGES_PER_ROW - 1
+        if (!unit.leftOfPlayer) {
+          min += IMAGES_IN_BUG_SPRITESHEET
+          max += IMAGES_IN_BUG_SPRITESHEET
+        }
+        if (unit.imageID < max && unit.imageID >= min) {
+          unit.imageID++
+        } else if (unit.imageID < min) {
+          unit.imageID = min
+        } else {
+          unit.imageID = min
+        }
+      } else if (8 == unit.kind) {
+      }
     }
   }
 
@@ -274,16 +316,12 @@ export class Entity {
   }
 
   update () {
-    if (!Entity.imagesLoaded) {
-      //this.initImages()
-      return
-    }
     let changeFrame = this.changeFramePacer()
     Entity.spawner && this.spawnUnit()
     for (let unit of this.units) {
       if (unit instanceof Unit && unit.active) {
         this.setVelocity(unit)
-        changeFrame && this.unitAdvanceFrame(unit)
+        changeFrame && this.entitySelectImage(unit)
         unit.leftOfPlayer = unit.worldX < this.game.player.worldX
         unit.worldX += unit.velX
         unit.worldY += unit.velY

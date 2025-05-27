@@ -16,6 +16,7 @@ import { Trigger } from './trigger.js'
 import { Brain } from './brain.js'
 import { Decor } from './decor.js'
 import * as Utils from './utils.js'
+import * as Assets from './assets.js'
 ;('use strict')
 
 const msPerTick = 60 / 1000
@@ -61,6 +62,7 @@ screenY = worldY - cameraY
 export let game
 
 export class Game {
+  #mode = 0
   static difficulty = 5
   static godmode = false
   static noclip = false
@@ -71,7 +73,8 @@ export class Game {
     MAINMENU: 1,
     OPTIONS: 2,
     PAUSED: 3,
-    TITLE: 4
+    TITLE: 4,
+    HELP: 5
   })
   constructor () {
     this.stage = 0
@@ -95,7 +98,9 @@ export class Game {
     this.menu = null
     this.sound = null
     this.game = null
-    this.mode = Game.modes.PLAY
+    this.mode = () => {
+      while (true) {}
+    }
     this.rastertext = null
     this.boardWidth = null
     this.boardHeight = null
@@ -108,11 +113,15 @@ export class Game {
   }
   requestStateChange (newState) {
     if (this.stateChangePacer()) {
-      this.mode = newState
+      this.#mode = newState
     }
   }
 
-  keyModeSelector () {
+  getMode () {
+    return this.#mode
+  }
+
+  keyModeSelector1 () {
     let keys = this?.input.keys
     if (keys == undefined) {
       return
@@ -152,44 +161,51 @@ window.onload = function () {
   if (NO_SCROLL) {
     body.setAttribute('style', 'overflow:hidden')
   }
+
   game.board = board
   board.height = boardHeight
   board.width = boardWidth
   context = board.getContext('2d')
   game.ctx = context
-  game.player = new Player(game)
-  game.input = new Input(game)
-  game.collision = new Collision(game)
-  game.tilegrid = new Tilegrid(game)
-  game.decor = new Decor(game)
-  game.brain = new Brain(game)
-  game.projectile = new Projectile(game)
-  game.editor = new Editor(game)
-  game.entity = new Entity(game)
-  game.splat = new Splat(game)
-  game.menu = new Menu(game)
-  game.pickup = new Pickup(game)
-  game.rastertext = new Rastertext(game)
-  game.sound = new Sound(this)
-  game.pathfind = new Pathfind(game)
-  game.hud = new Hud(game)
-  game.trigger = new Trigger(game)
-  game.boardWidth = boardWidth
-  game.boardHeight = boardHeight
-  game.tickCount = 0
-  game.displayTPS = 0
-  game.counterPacer = Utils.createMillisecondPacer(1000)
-  game.framePacer = Utils.createMillisecondPacer(FRAME_PERIOD_MS)
-  game.stateChangePacer = new Utils.createMillisecondPacer(1000)
 
-  requestAnimationFrame(draw)
-  let uinterval = setInterval(update, msPerTick)
-  board.click()
+  Assets.loadAssets(() => {
+    game.player = new Player(game)
+    game.input = new Input(game)
+    game.collision = new Collision(game)
+    game.tilegrid = new Tilegrid(game)
+    game.decor = new Decor(game)
+    game.brain = new Brain(game)
+    game.projectile = new Projectile(game)
+    game.editor = new Editor(game)
+
+    game.entity = new Entity(game)
+    game.splat = new Splat(game)
+    game.rastertext = new Rastertext(game)
+    game.menu = new Menu(game)
+    game.pickup = new Pickup(game)
+
+    game.sound = new Sound(this)
+    game.pathfind = new Pathfind(game)
+    game.hud = new Hud(game)
+    game.trigger = new Trigger(game)
+    game.boardWidth = boardWidth
+    game.boardHeight = boardHeight
+    game.tickCount = 0
+    game.displayTPS = 0
+    game.counterPacer = Utils.createMillisecondPacer(1000)
+    game.framePacer = Utils.createMillisecondPacer(FRAME_PERIOD_MS)
+    game.stateChangePacer = new Utils.createMillisecondPacer(1000)
+
+    requestAnimationFrame(draw)
+    let uinterval = setInterval(update, msPerTick)
+    board.click()
+  })
 }
 
 function update () {
   game.input.update()
-  if (game.mode == Game.modes.PLAY) {
+  let currMode = game.getMode()
+  if (currMode == Game.modes.PLAY) {
     game.player.update()
     game.brain.update()
     game.tilegrid.update()
@@ -204,7 +220,7 @@ function update () {
     game.splat.update()
     game.pickup.update()
     game.trigger.update()
-  } else if (game.mode == Game.modes.MAINMENU) {
+  } else {
     game.menu.update()
   }
 
@@ -222,7 +238,8 @@ function draw () {
   requestAnimationFrame(draw)
   if (game.framePacer()) {
     context.clearRect(0, 0, board.width, board.height) // clear previous frame
-    if (game.mode == Game.modes.PLAY) {
+    let currMode = game.getMode()
+    if (currMode == Game.modes.PLAY) {
       game.tilegrid.draw()
       game.decor.draw()
       game.projectile.draw()
@@ -237,7 +254,7 @@ function draw () {
       game.hud.draw()
 
       game.rastertext.draw()
-    } else if (game.mode == Game.modes.MAINMENU) {
+    } else {
       game.menu.draw()
     }
   }

@@ -231,7 +231,7 @@ export class Pickup {
   }
 
   removeUnitsLevelTransition (destinationLevel) {
-    debugger
+    //debugger
     let newUnits = []
     for (let i = 0; i < this.units.length; i++) {
       let element = this.units[i]

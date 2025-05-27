@@ -1,4 +1,5 @@
 import * as Utils from './utils.js'
+import * as Assets from './assets.js'
 const alphabet = 'abcdefghijklmnopqrstuvwxyz1234567890.:/ '
 let revetment = {}
 const LETTER_SIZE = 18
@@ -30,10 +31,11 @@ export class Rastertext {
   static letterSize = LETTER_SIZE
   constructor (game) {
     this.game = game
+    this.onload = () => {}
     this.initImages()
     this.units = []
   }
-  initImages () {
+  initImagesO () {
     let sheet = new Image()
     sheet.src = './images/font50horOL.png'
     sheet.onload = () => {
@@ -44,6 +46,9 @@ export class Rastertext {
       console.log('font images loaded')
       this.label1 = this.createLabel('THIS IS A TEST')
     }
+  }
+  initImages () {
+    this.images = Assets.font1
   }
 
   addUnit (screenX, screenY, content) {

@@ -105,18 +105,12 @@ export class Input {
       //   this.game.editor.handleClick(event, panelLoc)
       // }
       //menu clicks
-      switch (this.game.mode) {
-        case Game.modes.MAINMENU:
-        case Game.modes.PAUSED:
-          this.game.menu.handleClick(event, panelLoc)
-          break
-        case Game.modes.PLAY:
-          if (this.game.editor.enabled && this.clickIsInBounds(event)) {
-            this.game.editor.handleClick(event, panelLoc)
-          }
-          break
-        default:
-          break
+      if ((this.game.mode = Game.modes.PLAY)) {
+        if (this.game.editor.enabled && this.clickIsInBounds(event)) {
+          this.game.editor.handleClick(event, panelLoc)
+        }
+      } else {
+        this.game.menu.handleClick(event, panelLoc)
       }
     }
     this.menuMotion() // menu activation keypresses
@@ -128,11 +122,15 @@ export class Input {
     let keys = this.game.input.keys
 
     if (keys['Escape'] == true) {
-      if (this.game.mode == Game.modes.PLAY) {
-        this.game.requestStateChange(Game.modes.MAINMENU)
-      } else if (this.game.mode == Game.modes.MAINMENU) {
+      if (this.game.getMode() == Game.modes.PLAY) {
+        this.game.requestStateChange(Game.modes.PAUSED)
+      } else {
         this.game.requestStateChange(Game.modes.PLAY)
       }
+      keys['Escape'] = false
+    }
+    if (keys[' '] == true) {
+      console.log(this.game.getMode())
     }
 
     let up = keys['ArrowUp'] === true

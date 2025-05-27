@@ -80,6 +80,27 @@ export function getCookieValueFromCookieName (name) {
   return null
 }
 
+export class WaitGroup {
+  // golang style waitgroup
+  // alternative to async await promises.all
+  constructor (callbackFn) {
+    //debugger
+    this.callbackFn = callbackFn
+    this.tasks = 0
+    this.started = false
+  }
+  addTask () {
+    this.tasks += 1
+    this.started = true
+  }
+  subtractTask () {
+    this.tasks -= 1
+    if (this.started == true && this.tasks <= 0) {
+      this.callbackFn()
+    }
+  }
+}
+
 /**
  * Generate a random number within a range, inclusive of the max bound
  *
