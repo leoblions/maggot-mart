@@ -73,6 +73,21 @@ export class Hud {
     }
   }
 
+  updateHealthbar () {
+    //debugger
+    //console.log('update hb')
+    let percentHealth = this.game.health
+
+    let fullWidth = Math.floor((percentHealth / 100) * this.healthbarInnerMax)
+    let coverWidth = this.healthbarInnerMax - fullWidth
+    if (coverWidth > 0) {
+      HB_POSITION_INNER.width = coverWidth
+      HB_POSITION_INNER.x = this.healthBarInnerStartX + fullWidth
+    } else {
+      HB_POSITION_INNER.width = 1
+    }
+  }
+
   initImages () {
     let sheet = new Image()
     sheet.src = './images/healthBars.png'

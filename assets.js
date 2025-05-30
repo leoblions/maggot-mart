@@ -2,9 +2,11 @@ import * as Utils from './utils.js'
 import * as Imageutils from './imageutils.js'
 
 // GUI
-export var font1, menuBtnImg, shinyButtons
+export var font1, menuBtnImg, shinyButtons, titleImg, dialogImg
 // ENTITY
 export var bugsA, managerImg
+// SPECAL ENTITY
+export var elliotImg, claireImg
 
 //ensure assets are loaded before other classes try using them
 
@@ -35,11 +37,20 @@ export async function loadAssets (callbackFn) {
     let shinyBtnSrc = './images/shiny_buttons.png'
     let shinyBtnPromise = getImageData(shinyBtnSrc)
 
+    let dialogSrc = './images/dialogbox1.png'
+    let dialogSheet = await getImageData(dialogSrc)
+
     let bugsASrc = './images/bugsheet0.png'
     let bugsAPromise = Imageutils.mirrorAndAppendimageArrayFromURL(bugsASrc)
 
-    let managerSrc = './images/shiny_buttons.png'
+    let managerSrc = './images/alfred.png'
     let managerSheet = await getImageData(managerSrc)
+
+    let elliotSrc = './images/elliot2.png'
+    let elliotSheet = await getImageData(elliotSrc)
+
+    let titleSrc = './images/maggot mart title.png'
+    let titleImg = await getImageData(titleSrc)
 
     await Promise.all([
       font1promise,
@@ -72,6 +83,22 @@ export async function loadAssets (callbackFn) {
       100,
       200
     )
+    elliotImg = await Imageutils.cutSpriteSheetAsync(
+      elliotSheet,
+      4,
+      4,
+      100,
+      200
+    )
+
+    dialogImg = await Imageutils.cutSpriteSheetAsync(
+      dialogSheet,
+      2,
+      4,
+      250,
+      150
+    )
+
     callbackFn()
   }
 }

@@ -18,6 +18,7 @@ const CHECK_TOUCH_PERIOD = 100
 const ADD_OBJECTIVE_ITEM_PERIOD = 1000
 const OBJECTIVE_ITEM_SLOT = 0
 const RAND_ITEM_MIN_INDEX = 1 //slot zero is reserved for objective items
+const FRUIT_ADD_HEALTH_AMOUNT = 15
 
 const FRUIT_KIND_MIN_INDEX = 0
 const FRUIT_KIND_MAX_INDEX = 35
@@ -380,10 +381,15 @@ export class Pickup {
         console.log('Boxes ' + this.boxes)
       }
       if (
-        unit.sprays >= SPRAY_KIND_MIN_INDEX &&
+        unit.kind >= SPRAY_KIND_MIN_INDEX &&
         unit.kind <= SPRAY_KIND_MAX_INDEX
       ) {
         this.sprays += 1
+      } else if (
+        unit.kind >= FRUIT_KIND_MIN_INDEX &&
+        unit.kind <= FRUIT_KIND_MAX_INDEX
+      ) {
+        this.game.player.addHealth(FRUIT_ADD_HEALTH_AMOUNT)
       }
     }
   }

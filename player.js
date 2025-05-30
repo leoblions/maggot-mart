@@ -9,6 +9,7 @@ const RUN_SPEED = 5
 const COLL_WIDTH = 50
 const COLL_HEIGHT = 80
 const FRAME_PERIOD = 120
+const MAX_HEALTH = 100
 const SPRITES_PER_DIRECTION = 6
 const TAKE_DAMAGE_RATE_MS = 400
 const PLAYER_SPLAT_KIND = 5
@@ -77,6 +78,16 @@ export class Player {
       this.images = Utils.cutSpriteSheet(sheet, 6, 4, 100, 200)
       console.log('player images loaded')
     }
+  }
+
+  addHealth (amount) {
+    let newHealth = this.game.health + amount
+    if (newHealth < MAX_HEALTH) {
+      this.game.health = newHealth
+    } else {
+      this.game.health = MAX_HEALTH
+    }
+    this.game.hud.updateHealthbar()
   }
 
   updateScreenXY () {

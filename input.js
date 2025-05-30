@@ -147,10 +147,19 @@ export class Input {
     }
     if (keys['f'] == true) {
     }
+    if (keys['i'] == true) {
+      this.showInfo()
+      keys['i'] = false
+    }
 
     if (keys['e'] == true) {
     }
     //debugger
+  }
+  showInfo () {
+    let enemies = this.game.entity.getAmountActiveEnemies()
+    let message = `elemies remaining: ${enemies}`
+    window.alert(message)
   }
 
   // keydownActionClosure () {

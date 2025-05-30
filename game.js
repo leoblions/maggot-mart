@@ -15,6 +15,7 @@ import { Sound } from './sound.js'
 import { Trigger } from './trigger.js'
 import { Brain } from './brain.js'
 import { Decor } from './decor.js'
+import { Dialog } from './dialog.js'
 import * as Utils from './utils.js'
 import * as Assets from './assets.js'
 ;('use strict')
@@ -98,6 +99,7 @@ export class Game {
     this.menu = null
     this.sound = null
     this.game = null
+    this.dialog = null
     this.mode = () => {
       while (true) {}
     }
@@ -183,7 +185,7 @@ window.onload = function () {
     game.rastertext = new Rastertext(game)
     game.menu = new Menu(game)
     game.pickup = new Pickup(game)
-
+    game.dialog = new Dialog(game)
     game.sound = new Sound(this)
     game.pathfind = new Pathfind(game)
     game.hud = new Hud(game)
@@ -217,6 +219,7 @@ function update () {
     game.decor.update()
 
     game.rastertext.update()
+    game.dialog.update()
     game.splat.update()
     game.pickup.update()
     game.trigger.update()
@@ -251,6 +254,7 @@ function draw () {
       game.trigger.draw()
       game.entity.draw()
       //top
+      game.dialog.draw()
       game.hud.draw()
 
       game.rastertext.draw()

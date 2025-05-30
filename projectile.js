@@ -11,6 +11,7 @@ const ENTITY_HIT_OFFSET = 50
 const DAMAGE_DIST = 50
 const ENTITY_SPLAT_KIND = 4
 const HITBOX_OFFSET = 25
+const REMOVE_PROJ_ON_HIT_ENEMY = true
 
 class Unit {
   constructor (worldX, worldY, kind) {
@@ -126,6 +127,9 @@ export class Projectile {
         let dY = Math.abs(entY - unit.worldY)
         if (dX < DAMAGE_DIST && dY < DAMAGE_DIST) {
           entity.takeDamage()
+          if (REMOVE_PROJ_ON_HIT_ENEMY) {
+            unit.active = false
+          }
           //debugger
           let splat = this.game.splat.addUnit(
             entity.worldX,
@@ -134,7 +138,7 @@ export class Projectile {
           )
           //splat.velX = unit.velX
           //splat.velY = unit.velY
-          entity.active = false
+          //entity.active = false
           break
         }
       }

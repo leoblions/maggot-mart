@@ -1,0 +1,21 @@
+[
+  {
+    "chainID": 0,
+    "speaker": [
+      "Jess",
+      "Alfred",
+      "Alfred",
+      "Alfred",
+      "Alfred",
+      "Jess"
+    ],
+    "line": [
+      "Good morning Alfred",
+      "Hi Jess. I need you to start stocking the shelves.",
+      "Matt already pulled down the boxes for you in the stockroom.",
+      "And clean up the produce customers keep leaving on the floor!",
+      "Come see me when you're done stocking.",
+      "Ok"
+    ]
+  }
+]
