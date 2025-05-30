@@ -163,7 +163,7 @@ export class Player {
       this.game.sound.playSoundByName('spray1')
     }
 
-    if (keys['e'] == true) {
+    if (keys[';'] == true) {
       this.game.entity.addUnit(
         this.worldX,
         this.worldY,

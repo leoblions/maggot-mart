@@ -5,9 +5,10 @@ body {
 
 #board {
   background-color: black;
+  background-image: url('./images/maggot mart title.png');
 }
 
 #board2 {
   background-color: black;
-  background-image: url('./flappybirdbg.png');
+  background-image: url('./backgroundimg.png');
 }

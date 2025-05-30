@@ -95,6 +95,16 @@ export class Brain {
     }
   }
 
+  playerActivateNPC (kind) {
+    switch (kind) {
+      case 8:
+        this.game.dialog.startDialogChain(0)
+        break
+      default:
+        break
+    }
+  }
+
   dequeueAction () {
     let action = this.queuedActions.shift()
     if (undefined != action) {

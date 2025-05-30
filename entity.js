@@ -129,6 +129,7 @@ export class Entity {
     this.spawnPacer = Utils.createMillisecondPacer(SPAWN_RATE)
     this.changeDirectionPacer = Utils.createTickPacer(CHANGE_DIRECTION_PERIOD)
     this.changeFramePacer = Utils.createMillisecondPacer(FRAME_DURATION_MS)
+    this.playerPressedActivate = false
     this.initImages()
     //debugger
     //this.addUnitToGrid(2, 2, 8, true)
@@ -299,6 +300,12 @@ export class Entity {
       unit.velX = 0
       if (unit.isEnemy) {
         this.game.player.playerHitByEnemy(unit)
+      } else if (!unit.isEnemy && this.playerPressedActivate) {
+        //activate NPC
+
+        console.log('player activate npc ' + unit.kind)
+        this.game.brain.playerActivateNPC(unit.kind)
+        this.playerPressedActivate = false
       }
     }
     if (unit.state == 's') {
@@ -461,6 +468,7 @@ export class Entity {
           // if unit is in a different level, deactivate and don't show
           unit.active = false
         }
+
         if (unit.active) {
           this.entityMotion(unit)
           this.setDirection(unit)

@@ -4,6 +4,8 @@ import * as Assets from './assets.js'
 const MESSAGE_DEBOUNCE = 500
 const BOX_WIDTH = 350
 const BOX_HEIGHT = 100
+const TEXT_OFFSET_X = 10
+const TEXT_OFFSET_Y = 10
 
 export class Dialog {
   static animateSpeed = 60
@@ -12,7 +14,7 @@ export class Dialog {
     this.screenX = Math.round(this.game.board.width / 2 - BOX_WIDTH / 2)
     this.screenY = this.game.board.height - BOX_HEIGHT
     this.images = null
-    this.active = true
+    this.active = false
     this.changeMessageRequested = false
     this.dialogPacer = Utils.createMillisecondPacer(MESSAGE_DEBOUNCE)
     this.background = Assets.dialogImg[0]
@@ -22,6 +24,7 @@ export class Dialog {
     this.currentSpeaker = 'None'
     this.currentText = 'no text'
     this.chainMaxLineNumber = 0
+    this.playerPressedActivate = false
     this.initChains()
   }
 
@@ -72,6 +75,17 @@ export class Dialog {
     }
   }
 
+  drawText () {
+    let ctx = this.game.ctx
+    ctx.fillStyle = 'white' //color of font
+    ctx.font = `12px sans-serif`
+    ctx.fillText(
+      this.currentText,
+      this.screenX + TEXT_OFFSET_X,
+      this.screenY + TEXT_OFFSET_Y
+    )
+  }
+
   draw () {
     if (this.active) {
       this.game.ctx.drawImage(
@@ -82,10 +96,16 @@ export class Dialog {
         BOX_HEIGHT
       )
     }
+    this.drawText()
   }
 
   update () {
     if (this.changeMessageRequested && this.dialogPacer()) {
+      if (this.active) {
+        console.log('advance chain')
+        this.advanceDialogChain()
+      }
+      this.changeMessageRequested = false
     }
   }
 }
