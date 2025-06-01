@@ -2,7 +2,8 @@ import * as Utils from './utils.js'
 import * as Assets from './assets.js'
 import * as Tilegrid from './tilegrid.js'
 
-const MAX_UNITS = 10
+const MAX_UNITS = 15
+const ENEMY_START_ARRAY_INDEX = 5
 const SPRITE_WIDTH = 100
 const SPRITE_HEIGHT = 100
 const UNIT_LIFE = 40
@@ -20,19 +21,22 @@ const PLAYER_TOUCH_OFFSET_X = 50
 const PLAYER_TOUCH_OFFSET_Y = 50
 const BUG_IMAGES_PER_ROW = 4
 const IMAGES_IN_BUG_SPRITESHEET = 16
-const ENABLE_SPAWNER = false
+const ENABLE_SPAWNER_OVERRIDE = false
 const SPAWN_X = 1000
 const SPAWN_Y = 900
 const CHARACTER_IMAGES_X = 6
 const CHARACTER_IMAGES_Y = 4
 const EK_MANAGER = 8
 const EK_ELLIOT = 9
+const EK_OBJECTIVE = 20
 const DEFAULT_ENEMIES_LIMIT = 3
+const OBJ_MARKER_ARRAY_INDEX = 4
 /*
 Entity kinds
 0-7 enemy
 8 manager
 9 elliot
+20 objective
 
 */
 
@@ -47,12 +51,17 @@ class Unit {
     this.worldX = worldX
     this.worldY = worldY
     this.active = true
+    this.deactivateOnInteract = false
     this.imageSet = 0 // up down left right
     this.level = Entity.currentLevel
     this.speed = Entity.speed
     this.state = 'f' // s stand, f follow, a attack
     this.direction = 'd' // u d l r
-    if (this.kind == EK_MANAGER || this.kind == EK_ELLIOT) {
+    if (
+      this.kind == EK_MANAGER ||
+      this.kind == EK_ELLIOT ||
+      this.kind == EK_OBJECTIVE
+    ) {
       this.state = 's'
     }
     this.isEnemy = false
@@ -63,6 +72,10 @@ class Unit {
     } else if (this.kind == EK_ELLIOT) {
       this.width = 100
       this.height = 110
+    } else if (this.kind == EK_OBJECTIVE) {
+      this.deactivateOnInteract = true
+      this.width = 100
+      this.height = 100
     } else {
       this.isEnemy = true
       this.width = SPRITE_WIDTH
@@ -84,6 +97,8 @@ class Unit {
       this.imageArray = Entity.managerImages
     } else if (this.kind == EK_ELLIOT) {
       this.imageArray = Entity.elliotImages
+    } else if (this.kind == EK_OBJECTIVE) {
+      this.imageArray = Entity.markerImages
     }
     //this.setFrameMinAndmax()
   }
@@ -135,12 +150,15 @@ export class Entity {
     //this.addUnitToGrid(2, 2, 8, true)
     this.addUnit(200, 200, 8, true)
     this.addUnit(500, 200, 9, true)
+
+    //this.addUnitToGrid(5, 6, 20, true)
   }
 
   initImages () {
     Entity.bugImages = Assets.bugsA
     Entity.managerImages = Assets.managerImg
     Entity.elliotImages = Assets.elliotImg
+    Entity.markerImages = Assets.markerImg
   }
 
   async initImagesO () {
@@ -172,7 +190,7 @@ export class Entity {
     let kind = Math.floor(Math.random() * MAX_KIND)
     let worldX = SPAWN_X
     let worldY = SPAWN_Y
-    for (let i = 0; i < MAX_UNITS; i++) {
+    for (let i = ENEMY_START_ARRAY_INDEX; i < MAX_UNITS; i++) {
       let element = this.units[i]
       if (!(element instanceof Unit) || !element.active) {
         if (true) {
@@ -183,9 +201,36 @@ export class Entity {
       }
     }
   }
+  placeObjectiveMarker (gridX, gridY, level) {
+    let index = OBJ_MARKER_ARRAY_INDEX
+    let kind = EK_OBJECTIVE
+
+    this.units[index] = this.createUnitGridLoc(gridX, gridY, kind, level)
+    if (level == this.game.level) {
+      this.units[index].active = true
+      this.units[index].visible = true
+    }
+    console.log('added objective marker')
+  }
+  objectiveMarkerIsSet () {
+    let marker = this.units[OBJ_MARKER_ARRAY_INDEX]
+    if (marker != null && (marker.active || marker.level != this.game.level)) {
+      return true
+    } else {
+      return false
+    }
+  }
+  createUnitGridLoc (gridX, gridY, kind, level = 0) {
+    let worldX = Math.round(gridX * this.game.tileSize)
+    let worldY = Math.round(gridY * this.game.tileSize)
+
+    let unit = new Unit(worldX, worldY, kind)
+    unit.level = level
+    return unit
+  }
   addUnitToGrid (gridX, gridY, kind, forceAdd = false) {
-    let worldX = Math.round(gridX * Tilegrid.tileSize)
-    let worldY = Math.round(gridY * Tilegrid.tileSize)
+    let worldX = Math.round(gridX * this.game.tileSize)
+    let worldY = Math.round(gridY * this.game.tileSize)
     let unit = null
     for (let i = 0; i < MAX_UNITS; i++) {
       let element = this.units[i]
@@ -286,18 +331,8 @@ export class Entity {
     }
   }
 
-  entityMotion (unit) {
-    let pathfindX = unit.worldX - PF_SPRITE_OFFSET_X
-    let pathfindY = unit.worldY - PF_SPRITE_OFFSET_Y
-
-    // if (this.game.pathfind.entityMatchesPlayerSquare(pathfindX, pathfindY)) {
-
-    //   return
-    // }
-
+  entityPlayerInteract (unit) {
     if (this.entityTouchPlayer(unit)) {
-      unit.velY = 0
-      unit.velX = 0
       if (unit.isEnemy) {
         this.game.player.playerHitByEnemy(unit)
       } else if (!unit.isEnemy && this.playerPressedActivate) {
@@ -305,9 +340,29 @@ export class Entity {
 
         console.log('player activate npc ' + unit.kind)
         this.game.brain.playerActivateNPC(unit.kind)
+        if (unit.deactivateOnInteract) {
+          unit.active = false
+          unit.life = 0
+          console.log(
+            `deactivated unit kind ${unit.kind} at array pos ${unit.index}`
+          )
+        }
         this.playerPressedActivate = false
       }
     }
+  }
+
+  entityMotion (unit) {
+    let pathfindX = unit.worldX - PF_SPRITE_OFFSET_X
+    let pathfindY = unit.worldY - PF_SPRITE_OFFSET_Y
+    unit.velY = 0
+    unit.velX = 0
+
+    // if (this.game.pathfind.entityMatchesPlayerSquare(pathfindX, pathfindY)) {
+
+    //   return
+    // }
+
     if (unit.state == 's') {
       // standing
       return
@@ -400,10 +455,18 @@ export class Entity {
         } else {
           unit.imageID = min
         }
-      } else if (8 == unit.kind) {
+      } else if (EK_MANAGER == unit.kind) {
         this.selectImageCharacter(unit)
-      } else if (9 == unit.kind) {
+      } else if (EK_ELLIOT == unit.kind) {
         this.selectImageCharacter(unit)
+      } else if (EK_OBJECTIVE == unit.kind) {
+        let min = 0
+        let max = 5
+        if (unit.imageID < max) {
+          unit.imageID++
+        } else {
+          unit.imageID = min
+        }
       }
     }
   }
@@ -460,8 +523,11 @@ export class Entity {
         this.spawnUnit()
       }
     }
+    let index = 0
+
     for (let unit of this.units) {
       if (unit instanceof Unit) {
+        unit.index = index
         if (unit.level == Entity.currentLevel && unit.life > 0) {
           unit.active = true
         } else {
@@ -470,6 +536,7 @@ export class Entity {
         }
 
         if (unit.active) {
+          this.entityPlayerInteract(unit)
           this.entityMotion(unit)
           this.setDirection(unit)
           changeFrame && this.entitySelectImage(unit)
@@ -478,6 +545,7 @@ export class Entity {
           unit.worldY += unit.velY
         }
       }
+      index++
     }
   }
 }

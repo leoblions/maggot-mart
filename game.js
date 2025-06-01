@@ -28,38 +28,6 @@ const TPS_COUNTER_INTERVAL_SEC = 5
 const FRAME_PERIOD_MS = Math.floor(1000 / 60)
 const START_HEALTH = 100
 
-// game modes
-
-/*
-
-screenY + cameraY = worldY
-screenY = worldY - cameraY
-
-*/
-
-// export const game = {
-//   cameraX: 0,
-//   cameraY: 0,
-//   tileSize: TILESIZE,
-//   player: null,
-//   hud: null,
-//   tilegrid: null,
-//   editor: null,
-//   input: null,
-//   entity: null,
-//   projectile: null,
-//   pathfind: null,
-//   collision: null,
-//   ctx: null,
-//   rastertext: null,
-//   boardWidth: null,
-//   boardHeight: null,
-//   score: 0,
-//   health: 0,
-//   level: 0,
-//   stamina: 0
-// }
-
 export let game
 
 export class Game {
@@ -110,8 +78,8 @@ export class Game {
     this.health = START_HEALTH
     this.level = 0
     this.stamina = START_HEALTH
-    this.objectiveTotal = 0
-    this.objectiveComplete = 0
+    // this.objectiveTotal = 0
+    // this.objectiveComplete = 0
   }
   requestStateChange (newState) {
     if (this.stateChangePacer()) {
@@ -185,7 +153,7 @@ window.onload = function () {
     game.rastertext = new Rastertext(game)
     game.menu = new Menu(game)
     game.pickup = new Pickup(game)
-    game.dialog = new Dialog(game)
+    game.dialog = new Dialog(game, 1)
     game.sound = new Sound(this)
     game.pathfind = new Pathfind(game)
     game.hud = new Hud(game)

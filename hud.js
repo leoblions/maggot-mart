@@ -35,7 +35,8 @@ export class Hud {
     this.initHealthBarPositions()
     this.updateHealthbarBlankingRect(100)
     this.updateObjectiveTextPacer = new Utils.createTickPacer(500)
-    this.objectiveStringTemplate = `${this.objectiveName}:${this.game.objectiveComplete}/${this.game.objectiveTotal}`
+    this.objectiveString = ''
+
     this.objectiveText = this.game.rastertext.addUnit(
       200,
       15,
@@ -112,6 +113,7 @@ export class Hud {
     ctx.fillText(SCORE_TEMPLATE + this.game.score, SCORE_X, SCORE_Y)
     ctx.fillText('TPS ' + this.game.displayTPS, SCORE_X, SCORE_Y + 20)
     ctx.fillText(`Player:  ${this.gridX} ${this.gridY}`, SCORE_X, SCORE_Y + 40)
+    ctx.fillText(`Stage:  ${this.game.brain.stage}  `, SCORE_X, SCORE_Y + 60)
     this.drawHealthbar()
   }
 

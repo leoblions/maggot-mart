@@ -1,0 +1,56 @@
+[
+  {
+    "stage": 1,
+    "name": "stage_1_boxes",
+    "note": "gridX, gridY, roomID",
+    "locations": [
+      {
+        "gridX": 4,
+        "gridY": 17,
+        "level": 1
+      },
+      {
+        "gridX": 6,
+        "gridY": 17,
+        "level": 1
+      },
+      {
+        "gridX": 4,
+        "gridY": 17,
+        "level": 1
+      },
+      {
+        "gridX": 6,
+        "gridY": 17,
+        "level": 1
+      }
+    ]
+  },
+  {
+    "stage": 3,
+    "name": "stage_3_cans",
+    "note": "gridX, gridY, roomID",
+    "locations": [
+      {
+        "gridX": 11,
+        "gridY": 8,
+        "level": 1
+      },
+      {
+        "gridX": 6,
+        "gridY": 8,
+        "level": 1
+      },
+      {
+        "gridX": 4,
+        "gridY": 8,
+        "level": 1
+      },
+      {
+        "gridX": 6,
+        "gridY": 8,
+        "level": 1
+      }
+    ]
+  }
+]

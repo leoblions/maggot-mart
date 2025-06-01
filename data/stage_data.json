@@ -1,0 +1,23 @@
+[
+  {
+    "stageID": 0,
+    "desc": "talk to boss - boxes"
+  },
+  {
+    "stageID": 1,
+    "category": "0",
+    "amount": 2,
+    "mustCarry": true
+  },
+  {
+    "stageID": 2,
+    "desc": "talk to boss - cans"
+  },
+  {
+    "desc": "collect cans",
+    "stageID": 3,
+    "category": "1",
+    "amount": 4,
+    "mustCarry": false
+  }
+]

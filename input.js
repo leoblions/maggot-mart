@@ -147,6 +147,10 @@ export class Input {
     }
     if (keys['f'] == true) {
     }
+    if (keys['l'] == true) {
+      this.game.brain.stageSelectRequest = true
+      keys['l'] == false
+    }
     if (keys['i'] == true) {
       this.showInfo()
       keys['i'] = false

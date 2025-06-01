@@ -13,6 +13,7 @@ const MAX_HEALTH = 100
 const SPRITES_PER_DIRECTION = 6
 const TAKE_DAMAGE_RATE_MS = 400
 const PLAYER_SPLAT_KIND = 5
+const ENABLE_DIALOG_FREEZE = true
 
 export const dpadStart = {
   up: false,
@@ -40,7 +41,7 @@ export class Player {
     this.walking = false
     this.cyclePart = 0
     this.walkPacer = Utils.createMillisecondPacer(FRAME_PERIOD)
-
+    this.freeze = false
     this.ready = false
     this.game = game
     this.dpad = dpadStart
@@ -135,6 +136,9 @@ export class Player {
     if (this.state == 'w') {
       // reset to standing if previously walking
       this.state = 's'
+    }
+    if (ENABLE_DIALOG_FREEZE && this.freeze) {
+      return
     }
 
     let collSides = this.game.collision.playerCollideTile()

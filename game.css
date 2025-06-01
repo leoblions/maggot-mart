@@ -5,7 +5,8 @@ body {
 
 #board {
   background-color: black;
-  background-image: url('./images/maggot mart title.png');
+  background-image: url('./images/bg50.png');
+  background-repeat: repeat;
 }
 
 #board2 {

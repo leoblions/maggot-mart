@@ -2,11 +2,14 @@ import * as Utils from './utils.js'
 import * as Imageutils from './imageutils.js'
 
 // GUI
-export var font1, menuBtnImg, shinyButtons, titleImg, dialogImg
+export var fontBig, fontSmall, menuBtnImg, shinyButtons, titleImg, dialogImg
 // ENTITY
 export var bugsA, managerImg
 // SPECAL ENTITY
 export var elliotImg, claireImg
+
+// WORLD OBJECT
+export var markerImg
 
 //ensure assets are loaded before other classes try using them
 
@@ -28,8 +31,18 @@ export function loadAssetsWG (callbackFn) {
 
 export async function loadAssets (callbackFn) {
   {
-    let font1src = './images/font50horOL.png'
-    let font1promise = getImageData(font1src)
+    let fontBigsrc = './images/fontBig.png'
+    let fontBigpromise = getImageData(fontBigsrc)
+
+    let fontSmallsrc = './images/fontSmall.png'
+    let fontSmallSheet = await getImageData(fontSmallsrc)
+    fontSmall = await Imageutils.cutSpriteSheetAsync(
+      fontSmallSheet,
+      40,
+      1,
+      10,
+      10
+    )
 
     let menuBtnSrc = './images/buttonsD.png'
     let menuBtnPromise = getImageData(menuBtnSrc)
@@ -49,16 +62,21 @@ export async function loadAssets (callbackFn) {
     let elliotSrc = './images/elliot2.png'
     let elliotSheet = await getImageData(elliotSrc)
 
+    let markerSrc = './images/marker.png'
+    let markerSheet = await getImageData(markerSrc)
+
     let titleSrc = './images/maggot mart title.png'
-    let titleImg = await getImageData(titleSrc)
+    titleImg = await getImageData(titleSrc)
 
     await Promise.all([
-      font1promise,
+      fontBigpromise,
+
       menuBtnPromise,
       shinyBtnPromise,
       bugsAPromise
     ]).then(async values => {
-      font1 = await Imageutils.cutSpriteSheetAsync(values[0], 40, 1, 50, 50)
+      fontBig = await Imageutils.cutSpriteSheetAsync(values[0], 40, 1, 50, 50)
+
       menuBtnImg = await Imageutils.cutSpriteSheetAsync(
         values[1],
         1,
@@ -98,6 +116,8 @@ export async function loadAssets (callbackFn) {
       250,
       150
     )
+
+    markerImg = await Imageutils.cutSpriteSheetAsync(markerSheet, 6, 1, 100, 99)
 
     callbackFn()
   }

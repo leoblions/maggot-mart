@@ -32,30 +32,7 @@ const SPRAY_KIND_MAX_INDEX = 50
 const KEY_KIND_MIN_INDEX = 52
 const KEY_KIND_MAX_INDEX = 61
 
-const boxSpawnPoints = [
-  [1, 2, 17],
-  [1, 4, 17],
-  [1, 6, 17],
-  [1, 8, 17]
-]
-const keySpawnPoints = [
-  [1, 2, 17],
-  [1, 4, 17],
-  [1, 6, 17],
-  [1, 8, 17]
-]
-const trapSpawnPoints = [
-  [1, 2, 17],
-  [1, 4, 17],
-  [1, 6, 17],
-  [1, 8, 17]
-]
-const spraySpawnPoints = [
-  [1, 2, 17],
-  [1, 4, 17],
-  [1, 6, 17],
-  [1, 8, 17]
-]
+const RANDLOC_MAX = 3
 
 class Unit {
   constructor (worldX, worldY, kind) {
@@ -89,6 +66,7 @@ export class Pickup {
     this.sprays = 0
     this.boxes = 0
     this.game = game
+    this.objective = false
     Pickup.sgame = game
     this.images = null
     this.units = new Array(MAX_UNITS)
@@ -98,7 +76,16 @@ export class Pickup {
     this.addObjectiveItemPacer = Utils.createMillisecondPacer(
       ADD_OBJECTIVE_ITEM_PERIOD
     )
+    this.spawnData = null
+    this.initPickupSpawnData()
     this.initImages()
+  }
+
+  async initPickupSpawnData () {
+    //fetch returns a promise
+    let response = await fetch('./data/locationItem.json')
+
+    this.spawndata = await response.json()
   }
 
   async initImages0 () {
@@ -113,6 +100,19 @@ export class Pickup {
 
         console.log('pickup images loaded')
       })
+    }
+  }
+
+  objectiveItemActive () {
+    let objItem = this.units[OBJECTIVE_ITEM_SLOT]
+    if (
+      objItem == null ||
+      !(objItem instanceof Unit) ||
+      objItem.active == false
+    ) {
+      return false
+    } else {
+      return true
     }
   }
 
@@ -222,6 +222,7 @@ export class Pickup {
       let element = this.units[i]
       if (!(element instanceof Unit) || !element.active) {
         newUnit = new Unit(worldX, worldY, kind)
+        newUnit.category = -1
         newUnit.level = this.game.level
 
         this.units[i] = newUnit
@@ -231,7 +232,7 @@ export class Pickup {
     return null
   }
 
-  removeUnitsLevelTransition (destinationLevel) {
+  deleteUnitsLevelTransition (destinationLevel) {
     //debugger
     let newUnits = []
     for (let i = 0; i < this.units.length; i++) {
@@ -241,6 +242,25 @@ export class Pickup {
         element.level == destinationLevel &&
         element.active
       ) {
+        newUnits.push(this.units[i])
+      }
+    }
+    this.units = newUnits
+  }
+
+  removeUnitsLevelTransition (destinationLevel) {
+    // keep nonobjective units that match next level
+    // keep objective units
+    let newUnits = []
+    for (let i = 0; i < this.units.length; i++) {
+      let element = this.units[i]
+      if (
+        element instanceof Unit &&
+        element.level == destinationLevel &&
+        element.active
+      ) {
+        newUnits.push(this.units[i])
+      } else if (element instanceof Unit && element.objective) {
         newUnits.push(this.units[i])
       }
     }
@@ -285,46 +305,131 @@ export class Pickup {
     return kind
   }
 
-  selectObjectiveItemLocationFromCurrentCategory () {
+  selectObjectiveItemKindFromCategory (category) {
     // 0 box, 1 spray, 2 key, 3 trap
-    let gridLocation = null
-    let locationCollection = null
-    //debugger
-    switch (this.objectiveCategory) {
+    let kind = 0
+    switch (Number(category)) {
       case 0:
-        locationCollection = boxSpawnPoints
+        kind = Utils.randRange(BOX_KIND_MIN_INDEX, BOX_KIND_MAX_INDEX)
         break
       case 1:
-        locationCollection = spraySpawnPoints
+        kind = Utils.randRange(SPRAY_KIND_MIN_INDEX, SPRAY_KIND_MAX_INDEX)
         break
       case 2:
-        locationCollection = keySpawnPoints
+        kind = Utils.randRange(KEY_KIND_MIN_INDEX, KEY_KIND_MAX_INDEX)
         break
       case 3:
-        locationCollection = trapSpawnPoints
+        kind = 51
         break
-      default:
-        return null
     }
-    let max = locationCollection.length - 1
-    let index = Utils.randRange(0, max)
-    return locationCollection[index]
+    return kind
   }
 
-  addObjectiveUnit () {
+  getObjectiveItemLocation () {
+    debugger
+    let index = Utils.randRange(0, RANDLOC_MAX)
+
+    for (let entry of this.spawndata) {
+      if ((entry.stage = this.game.brain.stage)) {
+        if (index >= entry.locations.length) {
+          throw 'Matching stage in item spawn location data found, but index out of range'
+        }
+        return entry.locations[index]
+      }
+    }
+    throw 'Matching stage in item spawn location data not found'
+  }
+
+  isObjectiveItemActive () {
+    let currentObjItem = this.units[OBJECTIVE_ITEM_SLOT]
+    if (currentObjItem == undefined || currentObjItem?.active == false) {
+      if (currentObjItem?.objective ?? false) {
+        return true
+      }
+    }
+
+    return false
+  }
+
+  objectiveItemInCurrentLevel () {
+    //debugger
+    let currentObjItem = this.units[OBJECTIVE_ITEM_SLOT]
+    if (
+      !(currentObjItem == undefined) &&
+      (currentObjItem?.level ?? -1) == this.game.level
+    ) {
+      return true
+    }
+
+    return false
+  }
+
+  objectiveItemExists () {
+    //debugger
+    let currentObjItem = this.units[OBJECTIVE_ITEM_SLOT]
+    if (!(currentObjItem == undefined) && currentObjItem instanceof Unit) {
+      return true
+    }
+
+    return false
+  }
+
+  addObjectiveUnit (category = this.objectiveCategory) {
+    category = Number(category)
+
     let newUnit = null
 
     let currentObjItem = this.units[OBJECTIVE_ITEM_SLOT]
     if (currentObjItem == undefined || currentObjItem?.active == false) {
       //debugger
-      let kind = this.selectObjectiveItemKindFromCurrentCategory()
-      let [level, gridX, gridY] =
-        this.selectObjectiveItemLocationFromCurrentCategory()
+      let kind = this.selectObjectiveItemKindFromCategory(category)
+      // let [level, gridX, gridY] =
+      //   this.selectObjectiveItemLocationFromCurrentCategory()
+
+      // let level = 1
+      // let gridX = 6
+      // let gridY = 17
+      let location = this.getObjectiveItemLocation()
+      let level = location.l
+      let gridX = location.x
+      let gridY = location.y
 
       let worldX = gridX * this.game.tilegrid.tileSize
       let worldY = gridY * this.game.tilegrid.tileSize
 
       newUnit = this.units[OBJECTIVE_ITEM_SLOT] = new Unit(worldX, worldY, kind)
+      newUnit.objective = true
+      newUnit.category = this.objectiveCategory
+      newUnit.level = level
+    }
+
+    return newUnit
+  }
+
+  /**
+   *
+   * @param {number} gridX grid location of objective unit left to right
+   * @param {number} gridY grid location of objective unit top to bottom
+   * @param {number} level which level to assign objective unit(location)
+   * @param {number} category used to select a kind (kind!=category)
+   * @returns reference to the unit
+   */
+  addObjectiveUnitXYLC (gridX, gridY, level, category = this.objectiveCategory) {
+    category = Number(category)
+
+    let newUnit = null
+
+    let currentObjItem = this.units[OBJECTIVE_ITEM_SLOT]
+    if (currentObjItem == undefined || currentObjItem?.active == false) {
+      //debugger
+      let kind = this.selectObjectiveItemKindFromCategory(category)
+
+      let worldX = gridX * this.game.tilegrid.tileSize
+      let worldY = gridY * this.game.tilegrid.tileSize
+
+      newUnit = this.units[OBJECTIVE_ITEM_SLOT] = new Unit(worldX, worldY, kind)
+      newUnit.objective = true
+      newUnit.category = category
       newUnit.level = level
     }
 
@@ -376,6 +481,8 @@ export class Pickup {
 
   collectItemSpecialActions (unit) {
     if (unit.active) {
+      this.game.brain.collectItemAction(unit.kind)
+      this.game.brain.collectItemCategoryAction(unit.category)
       if (unit.kind >= BOX_KIND_MIN_INDEX && unit.kind <= BOX_KIND_MAX_INDEX) {
         this.boxes += 1
         console.log('Boxes ' + this.boxes)
@@ -409,6 +516,11 @@ export class Pickup {
         element.worldY += element.velY
         if (checkVisible) {
           element.visible = element.checkRange(CULL_DISTANCE)
+          if (element.level != this.game.level) {
+            element.visible = false
+          } else {
+            element.visible = true
+          }
         }
         if (checkTouched && element.checkRange(TOUCH_PLAYER_RANGE)) {
           this.collectItemSpecialActions(element)

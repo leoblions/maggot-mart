@@ -695,3 +695,40 @@ export function near (x1, y1, x2, y2, xrange, yrange) {
   let dy = Math.abs(y1 - y2)
   return dx < xrange && dy < yrange
 }
+
+/**
+ * Splits input string into array of substrings based on a character limit.
+ *
+ * @param {*} origString original string input to be split
+ * @param {*} targetlength number of characters limit to split input string into parts
+ * @returns array of strings of approximately specified length
+ */
+export function stringSplitter (origString, targetlength) {
+  let splitChar = ' '
+  if (origString == undefined) {
+    return null
+  }
+  let wordArray = origString.split(splitChar)
+  let lines = []
+  let currentLine = ''
+  let word = null
+  for (word of wordArray) {
+    let testLine = null
+    if (currentLine.length === 0) {
+      testLine = word
+    } else {
+      testLine = currentLine + splitChar + word
+    }
+
+    if (testLine.length > targetlength) {
+      lines.push(currentLine)
+      currentLine = word
+    } else {
+      currentLine = testLine
+    }
+  }
+  if (currentLine != null) {
+    lines.push(currentLine)
+  }
+  return lines
+}

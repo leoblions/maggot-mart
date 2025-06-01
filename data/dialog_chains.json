@@ -1,6 +1,7 @@
 [
   {
     "chainID": 0,
+    "actionID": 0,
     "speaker": [
       "Jess",
       "Alfred",
@@ -16,6 +17,22 @@
       "And clean up the produce customers keep leaving on the floor!",
       "Come see me when you're done stocking.",
       "Ok"
+    ]
+  },
+  {
+    "chainID": 2,
+    "actionID": 1,
+    "speaker": [
+      "Jess",
+      "Alfred",
+      "Alfred",
+      "Alfred"
+    ],
+    "line": [
+      "I stocked the shelves like you said",
+      "Jess, I need you to gather up those pesticide cans in the storerooms",
+      "We've had a major cockroach infestation and the health inspector wasn't pleased.",
+      "I need to know how many more to order"
     ]
   }
 ]

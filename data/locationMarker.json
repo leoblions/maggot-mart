@@ -1,0 +1,19 @@
+[
+  {
+    "kind": 0,
+    "name": "box",
+    "note": "gridX, gridY, level",
+    "locations": [
+      {
+        "gridX": 5,
+        "gridY": 5,
+        "level": 1
+      },
+      {
+        "gridX": 7,
+        "gridY": 5,
+        "level": 1
+      }
+    ]
+  }
+]

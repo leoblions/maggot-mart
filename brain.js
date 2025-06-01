@@ -11,6 +11,20 @@ const LEVEL_DATA_PREFIX = '/data/actionTable'
 const LEVEL_DATA_SUFFIX = '.txt'
 const LOAD_DEFAULT_LEVEL = false
 const BLOCK_DUPLICATE_CONSECUTIVE_ACTIONS = true
+// categories: 0 box, 1 spray, 2 key, 3 trap 4 carts  5 hives
+const OBJECTIVE_NAMES = [
+  'boxes placed',
+  'bugspray',
+  'keys',
+  'traps',
+  'carts',
+  'hives'
+]
+const OBJECTIVE_AMOUNTS = [5, 5, 5, 5, 5]
+
+const EK_MANAGER = 8
+const EK_ELLIOT = 9
+const EK_OBJECTIVE = 20
 
 /**
  * Data format:
@@ -54,12 +68,105 @@ export class Brain {
   static lastInstance
   constructor (game) {
     this.game = game
+
+    this.stage = 0 // current stage of game, dealing with objectives not the physical area
+    this.carry = false // player is carrying item to objective
+
+    this.advanceStageOnObjectiveCount = true
     this.queuedActions = [] //actions to be processed
-    this.bflags = [] // flags to modify behavior of actions, or disable them
+    /**
+     * carry = player is carrying obj item
+     * must carry = player must be carrying to activate obj marker
+     * readyFNO = player did carry object and pressed OM
+     * marker pressed = player pressed OM
+     */
+    this.bflags = {
+      carry: false,
+      mustCarry: false,
+      readyForNextObjective: false,
+      readyForNextStage: false,
+      markerPressed: false
+    } // flags to modify behavior of actions, or disable them
+    this.objective = {
+      category: 0,
+      complete: 0,
+      incomplete: 0,
+      total: 1
+    }
     this.warps = []
+    this.stageData = null
+    this.itemLocationData = null
+    this.markerLocationData = null
     this.cycleFlagsPacer = new Utils.createMillisecondPacer(CYCLE_FLAGS_PERIOD)
     this.clickAddPacer = new Utils.createMillisecondPacer(CLICK_ADD_PACER)
     this.defaultInitializer()
+    this.initStageData()
+    this.initLocationData()
+  }
+
+  setObjective (category) {
+    this.objective.category = category
+    this.objective.complete = 0
+    this.objective.total = OBJECTIVE_AMOUNTS[category] ?? 0
+    this.setObjectiveText()
+  }
+
+  setStageData (stageID) {
+    for (const record of this.stageData) {
+      if (record.stageID == stageID) {
+        this.objective.category = record.category
+        this.bflags.carry = record?.carry ?? false
+        this.bflags.mustCarry = record?.mustCarry ?? false
+        this.objective.complete = 0
+        this.objective.incomplete = record.amount
+        this.objective.total = record.amount
+        this.setObjectiveText()
+        break
+      }
+    }
+  }
+
+  async initStageData () {
+    //fetch returns a promise
+    let response = await fetch('./data/stage_data.json')
+
+    this.stageData = await response.json()
+  }
+
+  async initLocationData () {
+    //fetch returns a promise
+    this.itemLocationData = await fetch('./data/locationItem.json')
+    this.itemLocationData = await this.itemLocationData.json()
+
+    this.markerLocationData = await fetch('./data/locationMarker.json')
+    this.markerLocationData = await this.markerLocationData.json()
+  }
+
+  getRandomItemLocation () {
+    for (const record of this.itemLocationData) {
+      if (record.stage == this.stage) {
+        let locations = record.locations
+        let location = locations[Math.floor(Math.random() * locations.length)]
+        return location
+      }
+    }
+    throw 'Could not find matching stage item location record'
+  }
+
+  setObjectiveText () {
+    let newText = ''
+    if (undefined == this.objective.total) {
+    } else {
+      let category = this.objective.category ?? 0
+      newText =
+        (OBJECTIVE_NAMES[category] ?? '') +
+        ' ' +
+        this.objective.complete +
+        '/' +
+        this.objective.total
+    }
+
+    this.game.hud.objectiveText.updateText(newText)
   }
 
   defaultInitializer () {
@@ -70,6 +177,32 @@ export class Brain {
     Brain.actionTable = []
     Brain.actionTable.push([0, -1, 1, 0, 1]) // warp room 0 to 1
     Brain.actionTable.push([1, -1, 1, 0, 0]) // warp room 1 to 0
+  }
+
+  collectItemAction (category) {
+    console.log('Pickup item category ' + category)
+  }
+
+  incrementObjectiveCounter () {
+    this.objective.complete += 1
+    this.objective.incomplete -= 1
+    this.setObjectiveText()
+  }
+
+  collectItemCategoryAction (itemCategory) {
+    // set bflags based on player collecting OI
+    if (itemCategory == this.objective.category) {
+      this.bflags.carry = true
+    }
+  }
+
+  // spawnNextObjective () {
+  //   this.game.entity.placeObjectiveMarker(5, 5, 0)
+  // }
+
+  activateObjectiveMarker () {
+    // player pressed on the objective marker(red box with arrow)
+    this.bflags.markerPressed = true
   }
 
   enqueueAction (actionID) {
@@ -95,10 +228,28 @@ export class Brain {
     }
   }
 
-  playerActivateNPC (kind) {
-    switch (kind) {
-      case 8:
-        this.game.dialog.startDialogChain(0)
+  getManagerDialogChain () {
+    switch (this.stage) {
+      case 0:
+      case 1:
+        return 0
+        break
+      case 2:
+        return 2
+        break
+      default:
+        return 0
+    }
+  }
+
+  playerActivateNPC (category) {
+    switch (category) {
+      case EK_MANAGER:
+        let managerChainID = this.getManagerDialogChain()
+        this.game.dialog.startDialogChain(managerChainID)
+        break
+      case EK_OBJECTIVE:
+        this.activateObjectiveMarker()
         break
       default:
         break
@@ -171,8 +322,209 @@ export class Brain {
     }
   }
 
+  advanceStageIfObjectivesComplete () {
+    if (
+      this.objective.complete == this.objective.total &&
+      this.advanceStageOnObjectiveCount
+    ) {
+      this.stage += 1
+      this.setStageData(this.stage)
+      if (this.objective.complete == this.objective.total) {
+        this.objective.total == 1
+      }
+    }
+  }
+
   update () {
+    if (this.stageSelectRequest) {
+      this.stageSelect()
+    }
     this.cycleFlagsPacer() && this.dequeueAction()
-    this.game.pickup.addObjectiveItemEnabled = true
+    //this.game.pickup.addObjectiveItemEnabled = true
+    this.stageSpecificChanges()
+    this.advanceStageIfObjectivesComplete()
+  }
+
+  stageSelect () {
+    const period = 20000
+
+    let now = Date.now()
+    //console.log(period)
+
+    if (this.SSlastTime == undefined || now - this.SSlastTime > period) {
+      let newStage = prompt('Enter stage number: ')
+      newStage = Number(newStage)
+      this.stage = newStage
+      this.setStageData(newStage)
+      //this.stageSelect = undefined
+    }
+    this.SSlastTime = now
+    this.stageSelectRequest = false
+  }
+
+  moveitemAtoBMission () {
+    // if player is carrying, carrying is required, and marker is pressed, set next obj
+    if (
+      this.bflags.mustCarry &&
+      this.bflags.carry &&
+      this.bflags.markerPressed
+    ) {
+      this.incrementObjectiveCounter()
+      this.bflags.readyForNextObjective = true
+      this.bflags.carry = false
+      this.bflags.markerPressed = false
+    }
+
+    // have needed objectives been reached?
+    if (this.objective.complete >= this.objective.total) {
+      this.bflags.readyForNextStage = true
+    }
+
+    // player has pickuped up OI and touched OM
+    if (this.bflags.readyForNextObjective) {
+      let location = this.getRandomItemLocation()
+      this.game.pickup.addObjectiveUnitXYLC(
+        location.gridX,
+        location.gridY,
+        location.level,
+        this.objective.category
+      )
+    }
+    // if player got OI and touched OM but does not have enough objectives
+    if (this.bflags.readyForNextObjective && !this.bflags.readyForNextStage) {
+      this.game.pickup.addObjectiveUnit(this.objective.category)
+      this.bflags.readyForNextObjective = false
+      console.log('placed box 1')
+      this.bflags.markerPressed = false
+      this.bflags.carry = false
+    }
+
+    // player is carrying and objective marker is not set, set OM
+    if (this.bflags.carry && !this.game.entity.objectiveMarkerIsSet()) {
+      this.game.entity.placeObjectiveMarker(8, 8, 0)
+    }
+
+    // if player is not carrying and no OI is active, create OI
+    if (!this.bflags.carry && !this.game.pickup.isObjectiveItemActive()) {
+      // only do si if pickup is in current level
+      if (!this.game.pickup.objectiveItemExists()) {
+        this.bflags.readyForNextObjective = false
+        //this.game.pickup.addObjectiveUnit(this.objective.category)
+
+        let location = this.getRandomItemLocation()
+        this.game.pickup.addObjectiveUnitXYLC(
+          location.gridX,
+          location.gridY,
+          location.level,
+          Number(this.objective.category)
+        )
+        console.log('placed box 2')
+      }
+    }
+  }
+
+  gatherMission () {
+    // if player is carrying remove item and increment counter
+
+    if (this.bflags.carry) {
+      this.incrementObjectiveCounter()
+      this.bflags.readyForNextObjective = true
+      this.bflags.carry = false
+      this.bflags.markerPressed = false
+    }
+
+    // have needed objectives been reached?
+    if (this.objective.complete >= this.objective.total) {
+      this.bflags.readyForNextStage = true
+    }
+
+    // player has pickuped up OI and touched OM
+    if (this.bflags.readyForNextObjective) {
+      let location = this.getRandomItemLocation()
+      this.game.pickup.addObjectiveUnitXYLC(
+        location.gridX,
+        location.gridY,
+        location.level,
+        this.objective.category
+      )
+    }
+    // if player got OI and touched OM but does not have enough objectives
+    if (this.bflags.readyForNextObjective && !this.bflags.readyForNextStage) {
+      this.game.pickup.addObjectiveUnit(this.objective.category)
+      this.bflags.readyForNextObjective = false
+      console.log('(1)placed obj item ' + this.objective.category)
+      this.bflags.markerPressed = false
+      this.bflags.carry = false
+    }
+
+    // player is not carrying and OI not set
+    if (!this.bflags.carry && !this.game.pickup.isObjectiveItemActive()) {
+      this.placeObjectiveItem()
+    }
+
+    // place OI
+    if (this.bflags.carry && !this.game.pickup.isObjectiveItemActive()) {
+      // only do si if pickup is in current level
+      if (!this.game.pickup.objectiveItemExists()) {
+        this.bflags.readyForNextObjective = false
+        //this.game.pickup.addObjectiveUnit(this.objective.category)
+        this.placeObjectiveItem()
+
+        this.bflags.carry = false
+        console.log('(2)placed obj item ' + this.objective.category)
+      }
+    }
+  }
+  placeObjectiveItem () {
+    let location = this.getRandomItemLocation()
+    while (location === this.lastLocation) {
+      location = this.getRandomItemLocation()
+    }
+    this.lastLocation = location
+    this.game.pickup.addObjectiveUnitXYLC(
+      location.gridX,
+      location.gridY,
+      location.level,
+      Number(this.objective.category)
+    )
+  }
+  stageSpecificChanges () {
+    // only this should call things based on bflags
+    // other bflags functions are called externally and modify bflags
+    switch (this.stage) {
+      case 0:
+        break
+      case 1:
+        //debugger
+        this.moveitemAtoBMission()
+        break
+      case 3:
+        this.gatherMission()
+      default:
+        break
+    }
+  }
+
+  dialogInvokeAction (actionID) {
+    switch (actionID) {
+      case 0:
+        //collect boxes, stock shelves
+
+        if (this.stage != 1) {
+          this.stage = 1
+          this.setStageData(1)
+        }
+
+        break
+      case 1:
+        // categories: 0 box, 1 spray, 2 key, 3 trap 4 carts  5 hives
+        //collect bug spray cans (stage 3)
+        if (this.stage != 3) {
+          this.stage = 3
+          this.setStageData(3)
+        }
+
+        break
+    }
   }
 }
