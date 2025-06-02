@@ -101,10 +101,12 @@ export class Dialog {
         this.chainMaxLineNumber = chain.line.length
         this.game.player.freeze = true
         this.updateDialogBoxLines()
+        break
       }
-      if (changed == false) {
-        console.error(`Chain ${chainID} not found`)
-      }
+    }
+    if (changed == false) {
+      debugger
+      console.error(`Chain ${chainID} not found`)
     }
   }
 

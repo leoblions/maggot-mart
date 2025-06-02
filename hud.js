@@ -39,7 +39,7 @@ export class Hud {
 
     this.objectiveText = this.game.rastertext.addUnit(
       200,
-      15,
+      10,
       this.objectiveStringTemplate
     )
   }

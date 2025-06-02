@@ -34,5 +34,21 @@
       "We've had a major cockroach infestation and the health inspector wasn't pleased.",
       "I need to know how many more to order"
     ]
+  },
+  {
+    "chainID": 3,
+    "actionID": 2,
+    "speaker": [
+      "Jess",
+      "Alfred",
+      "Alfred",
+      "Alfred"
+    ],
+    "line": [
+      "I gathered up those spray cans.  They're all completely empty.",
+      "We went through those quickly. So many roaches and mice.",
+      "That reminds me, go pick up those sprung mousetraps in the front area.",
+      "Then go throw the mice in the dumpster out back"
+    ]
   }
 ]

@@ -116,6 +116,10 @@ export class Pickup {
     }
   }
 
+  removeObjectiveItem () {
+    this.units[OBJECTIVE_ITEM_SLOT] = null
+  }
+
   initImages () {
     this.images = new Array(32)
     let sheet = new Image()

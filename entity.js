@@ -547,5 +547,6 @@ export class Entity {
       }
       index++
     }
+    this.playerPressedActivate = false
   }
 }

@@ -10,6 +10,9 @@ const DEFAULT_LEVEL_DATA_URL = '/data/trigger0.txt'
 const LEVEL_DATA_PREFIX = '/data/actionTable'
 const LEVEL_DATA_SUFFIX = '.txt'
 const LOAD_DEFAULT_LEVEL = false
+const DEFAULT_ITEM_SPAWN_STAGE = 0
+const INTERMISSION_0 = 'talk to boss'
+const INTERMISSION_1 = 'talk to elliot'
 const BLOCK_DUPLICATE_CONSECUTIVE_ACTIONS = true
 // categories: 0 box, 1 spray, 2 key, 3 trap 4 carts  5 hives
 const OBJECTIVE_NAMES = [
@@ -143,13 +146,52 @@ export class Brain {
   }
 
   getRandomItemLocation () {
+    let defaultLocationRecord = null
     for (const record of this.itemLocationData) {
+      if (record.stage == DEFAULT_ITEM_SPAWN_STAGE) {
+        defaultLocationRecord = record
+      }
       if (record.stage == this.stage) {
         let locations = record.locations
         let location = locations[Math.floor(Math.random() * locations.length)]
         return location
       }
     }
+    if (defaultLocationRecord != null) {
+      let locations = record.locations
+      let location = locations[Math.floor(Math.random() * locations.length)]
+      return location
+    }
+    debugger
+    throw 'Could not find matching stage item location record'
+  }
+
+  getNextItemLocation () {
+    let defaultLocationRecord = null
+    let lastItemIndex = this?.lastitemIndex ?? 0
+    let maxItemIndex = this.itemLocationData.length - 1
+    let nextItemIndex = lastItemIndex
+    if (nextItemIndex <= maxItemIndex) {
+      nextItemIndex += 1
+    } else {
+      nextItemIndex = 0
+    }
+    for (const record of this.itemLocationData) {
+      if (record.stage == DEFAULT_ITEM_SPAWN_STAGE) {
+        defaultLocationRecord = record
+      }
+      if (record.stage == this.stage) {
+        let locations = record.locations
+        let location = locations[nextItemIndex]
+        return location
+      }
+    }
+    if (defaultLocationRecord != null) {
+      let locations = record.locations
+      let location = locations[nextItemIndex]
+      return location
+    }
+    debugger
     throw 'Could not find matching stage item location record'
   }
 
@@ -166,6 +208,10 @@ export class Brain {
         this.objective.total
     }
 
+    this.game.hud.objectiveText.updateText(newText)
+  }
+
+  setObjectiveTextIntermission (newText) {
     this.game.hud.objectiveText.updateText(newText)
   }
 
@@ -225,20 +271,6 @@ export class Brain {
       let action = new Action(...matchingRow)
       this.queuedActions.push(action)
       console.log('enqueued action ')
-    }
-  }
-
-  getManagerDialogChain () {
-    switch (this.stage) {
-      case 0:
-      case 1:
-        return 0
-        break
-      case 2:
-        return 2
-        break
-      default:
-        return 0
     }
   }
 
@@ -328,6 +360,7 @@ export class Brain {
       this.advanceStageOnObjectiveCount
     ) {
       this.stage += 1
+      this.game.pickup.removeObjectiveItem()
       this.setStageData(this.stage)
       if (this.objective.complete == this.objective.total) {
         this.objective.total == 1
@@ -345,7 +378,7 @@ export class Brain {
     this.advanceStageIfObjectivesComplete()
   }
 
-  stageSelect () {
+  stageSelect1 () {
     const period = 20000
 
     let now = Date.now()
@@ -360,6 +393,27 @@ export class Brain {
     }
     this.SSlastTime = now
     this.stageSelectRequest = false
+  }
+
+  stageSelect () {
+    const delay = 2000
+    if (this.stageSelectEnabled == undefined) {
+      this.stageSelectEnabled = true
+    }
+
+    if (this.stageSelectEnabled) {
+      let newStage = prompt('Enter stage number: ')
+      newStage = Number(newStage)
+      this.stage = newStage
+      this.setStageData(newStage)
+      //this.stageSelect = undefined
+    }
+
+    this.stageSelectRequest = false
+    this.stageSelectEnabled = false
+    setTimeout(() => {
+      this.stageSelectEnabled = true
+    }, delay)
   }
 
   moveitemAtoBMission () {
@@ -419,6 +473,68 @@ export class Brain {
           Number(this.objective.category)
         )
         console.log('placed box 2')
+      }
+    }
+  }
+
+  gatherThenDepositMission () {
+    if (this.bflags.carry) {
+      this.incrementObjectiveCounter()
+      this.bflags.readyForNextObjective = true
+      this.bflags.carry = false
+      this.bflags.markerPressed = false
+    }
+
+    // have needed objectives been reached?
+    if (this.objective.complete >= this.objective.total) {
+      let location = this.getRandomItemLocation()
+      this.game.pickup.addObjectiveUnitXYLC(
+        location.gridX,
+        location.gridY,
+        location.level,
+        this.objective.category
+      )
+    }
+
+    // player touched marker
+    if (this.bflags.markerPressed) {
+      this.bflags.readyForNextStage = true
+    }
+
+    // player has pickuped up OI and touched OM
+    if (this.bflags.readyForNextObjective) {
+      let location = this.getRandomItemLocation()
+      this.game.pickup.addObjectiveUnitXYLC(
+        location.gridX,
+        location.gridY,
+        location.level,
+        this.objective.category
+      )
+    }
+    // if player got OI and touched OM but does not have enough objectives
+    if (this.bflags.readyForNextObjective && !this.bflags.readyForNextStage) {
+      this.game.pickup.addObjectiveUnit(this.objective.category)
+      this.bflags.readyForNextObjective = false
+      console.log('(1)placed obj item ' + this.objective.category)
+      this.bflags.markerPressed = false
+      this.bflags.carry = false
+    }
+
+    // player is not carrying and OI not set
+    if (!this.bflags.carry && !this.game.pickup.isObjectiveItemActive()) {
+      this.placeObjectiveItem()
+    }
+
+    // place OI
+    if (this.bflags.carry && !this.game.pickup.isObjectiveItemActive()) {
+      // only do si if pickup is in current level
+      if (!this.game.pickup.objectiveItemExists()) {
+        this.bflags.readyForNextObjective = false
+        //this.game.pickup.addObjectiveUnit(this.objective.category)
+        this.placeObjectiveItem()
+
+        this.bflags.carry = false
+        console.log('(2)placed obj item ' + this.objective.category)
       }
     }
   }
@@ -498,11 +614,37 @@ export class Brain {
         //debugger
         this.moveitemAtoBMission()
         break
+      case 2:
+        this.setObjectiveTextIntermission(INTERMISSION_0)
+        break
       case 3:
         this.gatherMission()
+        break
+      case 4:
+        this.setObjectiveTextIntermission(INTERMISSION_0)
+        break
+      case 5:
+        this.gatherThenDepositMission()
       default:
         break
     }
+  }
+
+  getManagerDialogChain () {
+    let chainID = 0
+    switch (this.stage) {
+      case 0:
+      case 1:
+        chainID = 0
+        break
+      case 2:
+        chainID = 2
+        break
+      default:
+        chainID = 0
+    }
+    console.log('selected manager dialog chain ' + chainID)
+    return chainID
   }
 
   dialogInvokeAction (actionID) {

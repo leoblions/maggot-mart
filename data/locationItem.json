@@ -37,18 +37,45 @@
         "level": 1
       },
       {
-        "gridX": 6,
+        "gridX": 7,
         "gridY": 8,
         "level": 1
       },
       {
         "gridX": 4,
-        "gridY": 8,
+        "gridY": 4,
         "level": 1
       },
       {
         "gridX": 6,
+        "gridY": 4,
+        "level": 1
+      }
+    ]
+  },
+  {
+    "stage": 5,
+    "name": "stage_3_traps",
+    "note": "gridX, gridY, roomID",
+    "locations": [
+      {
+        "gridX": 11,
         "gridY": 8,
+        "level": 1
+      },
+      {
+        "gridX": 7,
+        "gridY": 8,
+        "level": 1
+      },
+      {
+        "gridX": 4,
+        "gridY": 4,
+        "level": 1
+      },
+      {
+        "gridX": 6,
+        "gridY": 4,
         "level": 1
       }
     ]
