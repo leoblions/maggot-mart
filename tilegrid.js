@@ -15,12 +15,15 @@ const LEVEL_DATA_SUFFIX = '.txt'
 const LOAD_DEFAULT_LEVEL = false
 const TILE_TYPE_AMOUNT = 48
 
+
+
 export class Tilegrid {
   static grid = null
   static tileSize
   static solidArr = new Array(TILE_TYPE_AMOUNT).fill(false).map((v, i) => {
     return i > 15 ? true : false
   })
+
   constructor (game) {
     this.ready = false
     this.game = game
@@ -57,6 +60,20 @@ export class Tilegrid {
       this.loadCurrentLevel()
     }
     this.adjustBounds()
+  }
+
+  resetGrid(){
+    let newArray = []
+    for(let y = 0; y< tilesY;y++){
+      let currentRow = []
+      for(let x=0;x<tilesX;x++)
+      {
+        currentRow.push(DEFAULT_GROUND)
+
+      }
+      newArray.push(currentRow)
+    }
+    Tilegrid.grid = newArray
   }
 
   loadCurrentLevel () {

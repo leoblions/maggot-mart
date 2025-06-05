@@ -30,9 +30,9 @@
     ],
     "line": [
       "I stocked the shelves like you said",
-      "Jess, I need you to gather up those pesticide cans in the storerooms",
-      "We've had a major cockroach infestation and the health inspector wasn't pleased.",
-      "I need to know how many more to order"
+      "Jess, go check those bug spray cans in the storerooms",
+      "We've had a major cockroach infestation.",
+      "We're running low so I need to know how many to order"
     ]
   },
   {
@@ -46,7 +46,7 @@
     ],
     "line": [
       "I gathered up those spray cans.  They're all completely empty.",
-      "We went through those quickly. So many roaches and mice.",
+      "We went through those quickly, but there are more in the basement.",
       "That reminds me, go pick up those sprung mousetraps in the front area.",
       "Then go throw the mice in the dumpster out back"
     ]

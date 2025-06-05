@@ -378,6 +378,12 @@ export class Pickup {
     return false
   }
 
+  getObjectiveItem () {
+    //debugger
+    let currentObjItem = this.units[OBJECTIVE_ITEM_SLOT]
+    return currentObjItem
+  }
+
   addObjectiveUnit (category = this.objectiveCategory) {
     category = Number(category)
 

@@ -1,5 +1,5 @@
 import { Game } from './game.js'
-const LOG_CLICK_LOCATION = false
+const LOG_CLICK_LOCATION = true
 export class Input {
   constructor (game) {
     this.game = game
@@ -105,7 +105,9 @@ export class Input {
       //   this.game.editor.handleClick(event, panelLoc)
       // }
       //menu clicks
-      if ((this.game.mode = Game.modes.PLAY)) {
+
+      let mode = this.game.getMode()
+      if (mode == Game.modes.PLAY) {
         if (this.game.editor.enabled && this.clickIsInBounds(event)) {
           this.game.editor.handleClick(event, panelLoc)
         }

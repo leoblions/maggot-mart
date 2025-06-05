@@ -18,6 +18,7 @@ export class Editor {
   static asset = 0
   static editString = ''
   static editStringElement
+  static game = null
 
   static changeMode () {
     /**
@@ -36,10 +37,12 @@ export class Editor {
 
   constructor (game) {
     this.game = game
+    Editor.game = game
     this.enabled = true
     Editor.editStringElement = document.getElementById('editorDataPara')
 
     this.addButtonListeners()
+    //this.addPanelListener()
     Editor.setEditString()
   }
 
@@ -59,11 +62,14 @@ export class Editor {
       Editor.asset -= 1
       Editor.setEditString()
     })
+
     const assetkind = document.getElementById('assetkind')
     assetkind.addEventListener('click', () => {
+      console.log('Edit mode: ' + Editor.mode)
       Editor.changeMode()
       Editor.setEditString()
     })
+
     const deletemode = document.getElementById('deletemode')
     deletemode.addEventListener('click', () => {
       Editor.delete = !Editor.delete
@@ -71,6 +77,7 @@ export class Editor {
       const deletemode = document.getElementById('deletemode')
       deletemode.innerText = Editor.delete ? 'Delete ON' : 'Delete OFF'
     })
+
     const spawner = document.getElementById('spawner')
     spawner.addEventListener('click', () => {
       Entity.spawner = !Entity.spawner
@@ -78,6 +85,13 @@ export class Editor {
       const spawner = document.getElementById('spawner')
       spawner.innerText = Entity.spawner ? 'Spawner ON' : 'Spawner OFF'
     })
+
+    const resetgrid = document.getElementById('resetgrid')
+    resetgrid.addEventListener('click', () => {
+      Editor.game.tilegrid.resetGrid()
+      console.log('reset tilegrid')
+    })
+
     const savecookie = document.getElementById('savecookie')
     savecookie.addEventListener('click', function () {
       console.log('save cookie')
@@ -129,7 +143,8 @@ export class Editor {
   }
 
   handleClick (event, panelLoc) {
-    //console.log(event)
+    // this gets called from the input component
+    console.log(event)
     let gridLoc = this.panelXYtoGridXY(panelLoc.clickX, panelLoc.clickY)
 
     switch (Editor.mode) {

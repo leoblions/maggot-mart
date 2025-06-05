@@ -1,0 +1,42 @@
+[
+  {
+    "actionID": 0,
+    "gridX": 15,
+    "gridY": 0,
+    "gridW": 2,
+    "gridH": 1,
+    "level": 0
+  },
+  {
+    "actionID": 1,
+    "gridX": 15,
+    "gridY": 19,
+    "gridW": 2,
+    "gridH": 1,
+    "level": 1
+  },
+  {
+    "actionID": 1,
+    "gridX": 15,
+    "gridY": 0,
+    "gridW": 2,
+    "gridH": 1,
+    "level": 1
+  },
+  {
+    "actionID": 1,
+    "gridX": 0,
+    "gridY": 2,
+    "gridW": 1,
+    "gridH": 1,
+    "level": 1
+  },
+  {
+    "actionID": 1,
+    "gridX": 0,
+    "gridY": 2,
+    "gridW": 1,
+    "gridH": 1,
+    "level": 1
+  }
+]

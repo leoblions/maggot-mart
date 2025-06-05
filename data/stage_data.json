@@ -5,7 +5,7 @@
   },
   {
     "stageID": 1,
-    "category": "0",
+    "category": 0,
     "amount": 2,
     "mustCarry": true
   },
@@ -16,7 +16,14 @@
   {
     "desc": "collect cans",
     "stageID": 3,
-    "category": "1",
+    "category": 1,
+    "amount": 4,
+    "mustCarry": false
+  },
+  {
+    "desc": "collect traps",
+    "stageID": 5,
+    "category": 3,
     "amount": 4,
     "mustCarry": false
   }

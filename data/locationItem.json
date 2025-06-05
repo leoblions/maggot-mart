@@ -61,22 +61,22 @@
       {
         "gridX": 11,
         "gridY": 8,
-        "level": 1
-      },
-      {
-        "gridX": 7,
-        "gridY": 8,
-        "level": 1
-      },
-      {
-        "gridX": 4,
-        "gridY": 4,
-        "level": 1
+        "level": 0
       },
       {
         "gridX": 6,
+        "gridY": 16,
+        "level": 0
+      },
+      {
+        "gridX": 9,
         "gridY": 4,
-        "level": 1
+        "level": 0
+      },
+      {
+        "gridX": 9,
+        "gridY": 14,
+        "level": 0
       }
     ]
   }

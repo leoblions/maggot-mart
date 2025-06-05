@@ -13,6 +13,9 @@ const LOAD_DEFAULT_LEVEL = false
 /**
  * Data format:
  * gridX, gridY, gridW, gridH, actionID
+ *
+ * Trigger zones are rectangular zones in the world. When the player touches them,
+ * it invokes a response in Brain
  */
 
 class Unit {
@@ -31,11 +34,6 @@ class Unit {
     this.width = gridW * Tilegrid.tileSize
     this.height = gridH * Tilegrid.tileSize
     this.active = true
-    this.frame = 0
-    this.frameMin = 0
-    this.frameMax = 0
-    this.velX = 0
-    this.velY = 0
   }
 }
 
@@ -50,15 +48,33 @@ export class Trigger {
     )
     this.clickAddPacer = new Utils.createMillisecondPacer(CLICK_ADD_PACER)
     Trigger.lastInstance = this
-    if (LOAD_DEFAULT_LEVEL) {
-      this.loadDefaultLevel()
-    } else {
-      this.loadCurrentLevel()
-    }
+    this.triggerZones = null
+    this.initDataFromFile()
+    // if (LOAD_DEFAULT_LEVEL) {
+    //   this.loadDefaultLevel()
+    // } else {
+    //   this.loadCurrentLevel()
+    // }
     //this.adjustBounds()
   }
 
-  loadCurrentLevel () {
+  async initDataFromFile () {
+    //fetch returns a promise
+    let response = await fetch('./data/trigger_zones.json')
+
+    this.triggerZones = await response.json()
+
+    for (let unit of this.triggerZones) {
+      unit.worldX = unit.gridX * Tilegrid.tileSize
+      unit.worldY = unit.gridY * Tilegrid.tileSize
+      unit.width = unit.gridW * Tilegrid.tileSize
+      unit.height = unit.gridH * Tilegrid.tileSize
+    }
+  }
+
+  loadCurrentLevel () {}
+
+  loadCurrentLevel0 () {
     let currentLevelFile =
       LEVEL_DATA_PREFIX + this.game.level + LEVEL_DATA_SUFFIX
     Utils.loadFileAsText(currentLevelFile).then(
@@ -126,7 +142,7 @@ export class Trigger {
     return false
   }
 
-  updateGrid () {
+  updateGridOld () {
     let grid = []
     for (const unit of this.units) {
       if (unit instanceof Unit) {
@@ -138,6 +154,18 @@ export class Trigger {
           unit.actionID
         ]
         grid.push(row)
+      }
+    }
+    console.log('trigger grid updated')
+    Trigger.grid = grid
+  }
+  updateGrid () {
+    let level = this.game.level
+    for (const unit of this.units) {
+      if (unit instanceof Unit && unit.level == level) {
+        unit.active = true
+      } else {
+        unit.level = false
       }
     }
     console.log('trigger grid updated')
@@ -156,13 +184,13 @@ export class Trigger {
   addUnitToGrid (gridX, gridY, gridW, gridH, actionID) {
     let newUnit
     for (let i = 0; i < MAX_UNITS; i++) {
-      let element = this.units[i]
+      let element = this.triggerZones[i]
       if (!(element instanceof Unit)) {
-        this.units[i] = new Unit(gridX, gridY, gridW, gridH, actionID)
+        this.triggerZones[i] = new Unit(gridX, gridY, gridW, gridH, actionID)
         console.log('added trigger zone at ' + i)
         break
       } else if (this.unitCellMatchesLocation(gridX, gridY)) {
-        this.units[i] = new Unit(gridX, gridY, gridW, gridH, actionID)
+        this.triggerZones[i] = new Unit(gridX, gridY, gridW, gridH, actionID)
         console.log('updated trigger zone at ' + i)
         break
       }
@@ -171,8 +199,9 @@ export class Trigger {
   }
 
   draw () {
-    for (let unit of this.units) {
-      if (unit instanceof Unit && unit.active) {
+    if (this.triggerZones == null) return
+    for (let unit of this.triggerZones) {
+      if (unit != null && unit.active) {
         //debugger
         let screenX = unit.worldX - this.game.cameraX
         let screenY = unit.worldY - this.game.cameraY
@@ -185,6 +214,7 @@ export class Trigger {
   }
 
   detectCollision = (a, b) => {
+    debugger
     return (
       a.worldX < b.worldX + b.width &&
       a.worldX + a.width > b.worldX &&
@@ -199,8 +229,10 @@ export class Trigger {
   }
 
   checkPlayerTouchUnit (unit) {
-    if (unit?.constructor.name == 'Unit' && unit.active) {
+    if (!unit?.constructor.name == 'Unit') {
       debugger
+    }
+    if (unit.active) {
       if (this.detectCollision(unit, this.game.player)) {
         debugger
         this.triggerAction(unit.actionID)
@@ -209,12 +241,24 @@ export class Trigger {
   }
 
   update () {
-    for (let unit of this.units) {
-      if (unit instanceof Unit && unit.active) {
+    let checkColl = this.checkTouchedPacer()
+    if (this.triggerZones == null) return
+    for (let unit of this.triggerZones) {
+      if (unit != null) {
+        if (unit?.level == undefined) {
+          unit.level = 0
+          unit.active = false
+        } else if (unit.level == this.game.level) {
+          unit.active = true
+        } else if (unit.level != this.game.level) {
+          unit.active = false
+        }
         if (
-          this.checkTouchedPacer() &&
+          checkColl &&
+          unit.level == this.game.level &&
           this.detectCollision(unit, this.game.player)
         ) {
+          debugger
           this.triggerAction(unit.actionID)
         }
       }

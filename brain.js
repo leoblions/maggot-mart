@@ -96,7 +96,7 @@ export class Brain {
       incomplete: 0,
       total: 1
     }
-    this.warps = []
+    this.warpDestinations = []
     this.stageData = null
     this.itemLocationData = null
     this.markerLocationData = null
@@ -162,36 +162,39 @@ export class Brain {
       let location = locations[Math.floor(Math.random() * locations.length)]
       return location
     }
-    debugger
+
     throw 'Could not find matching stage item location record'
   }
 
   getNextItemLocation () {
     let defaultLocationRecord = null
-    let lastItemIndex = this?.lastitemIndex ?? 0
-    let maxItemIndex = this.itemLocationData.length - 1
-    let nextItemIndex = lastItemIndex
-    if (nextItemIndex <= maxItemIndex) {
-      nextItemIndex += 1
+    let len = this.itemLocationData.length
+    // default location to 0
+    if (undefined == this.currentItemIndex) {
+      this.currentItemIndex = 0
     } else {
-      nextItemIndex = 0
-    }
-    for (const record of this.itemLocationData) {
-      if (record.stage == DEFAULT_ITEM_SPAWN_STAGE) {
-        defaultLocationRecord = record
-      }
-      if (record.stage == this.stage) {
-        let locations = record.locations
-        let location = locations[nextItemIndex]
-        return location
+      if (this.currentItemIndex < len) {
+        this.currentItemIndex += 1
+      } else {
+        this.currentItemIndex = 0
       }
     }
-    if (defaultLocationRecord != null) {
-      let locations = record.locations
-      let location = locations[nextItemIndex]
+
+    let desiredRecord = this.getLocationsFromStageID(this.stage)
+    if (desiredRecord != null) {
+      let locations = desiredRecord.locations
+      let location = locations[this.currentItemIndex]
+      return location
+    } else {
+      desiredRecord = this.getLocationsFromStageID(DEFAULT_ITEM_SPAWN_STAGE)
+      if (null == desiredRecord) {
+        throw 'Could not find matching stage item location record'
+      }
+      let locations = desiredRecord.locations
+      let location = locations[this.currentItemIndex]
       return location
     }
-    debugger
+
     throw 'Could not find matching stage item location record'
   }
 
@@ -216,10 +219,12 @@ export class Brain {
   }
 
   defaultInitializer () {
-    this.warps = []
-    this.warps.push([0, 15, 1])
-    this.warps.push([1, 15, 18])
+    // 0 dest level, 1 dest gridX, 2 dest gridY
+    this.warpDestinations = []
+    this.warpDestinations.push([0, 15, 1])
+    this.warpDestinations.push([1, 15, 18])
 
+    //actionID, nextActionID, enabled 0/1, functionID, functionArg
     Brain.actionTable = []
     Brain.actionTable.push([0, -1, 1, 0, 1]) // warp room 0 to 1
     Brain.actionTable.push([1, -1, 1, 0, 0]) // warp room 1 to 0
@@ -315,7 +320,9 @@ export class Brain {
   }
 
   warp (warpID) {
-    const [destinationLevel, gridX, gridY] = this.warps[warpID] ?? [-1, -1, -1]
+    const [destinationLevel, gridX, gridY] = this.warpDestinations[warpID] ?? [
+      -1, -1, -1
+    ]
     if (destinationLevel == -1) {
       console.error('Invalid level data for warpID ' + warpID)
     }
@@ -363,7 +370,8 @@ export class Brain {
       this.game.pickup.removeObjectiveItem()
       this.setStageData(this.stage)
       if (this.objective.complete == this.objective.total) {
-        this.objective.total == 1
+        this.objective.complete = 0
+        this.objective.total = 1
       }
     }
   }
@@ -556,7 +564,7 @@ export class Brain {
 
     // player has pickuped up OI and touched OM
     if (this.bflags.readyForNextObjective) {
-      let location = this.getRandomItemLocation()
+      let location = this.getNextItemLocation()
       this.game.pickup.addObjectiveUnitXYLC(
         location.gridX,
         location.gridY,
@@ -575,7 +583,15 @@ export class Brain {
 
     // player is not carrying and OI not set
     if (!this.bflags.carry && !this.game.pickup.isObjectiveItemActive()) {
-      this.placeObjectiveItem()
+      this.currentOI = this.game.pickup.getObjectiveItem()
+      if (
+        this.currentOI == undefined ||
+        (this.game.level == this.currentOI.level && !this.currentOI.active)
+      ) {
+        this.placeObjectiveItem()
+
+        console.log('placeObjectiveItem')
+      }
     }
 
     // place OI
@@ -591,10 +607,21 @@ export class Brain {
       }
     }
   }
+  getLocationsFromStageID (stage) {
+    for (let location of this.itemLocationData) {
+      if (location.stage == stage) {
+        return location
+      }
+    }
+    return null
+  }
   placeObjectiveItem () {
-    let location = this.getRandomItemLocation()
-    while (location === this.lastLocation) {
-      location = this.getRandomItemLocation()
+    let locationsPossible = this.getLocationsFromStageID(this.stage).locations
+      .length
+
+    let location = this.getNextItemLocation()
+    while (location == this.lastLocation && locationsPossible > 1) {
+      location = this.getNextItemLocation()
     }
     this.lastLocation = location
     this.game.pickup.addObjectiveUnitXYLC(
@@ -640,10 +667,13 @@ export class Brain {
       case 2:
         chainID = 2
         break
+      case 4:
+        chainID = 3
+        break
       default:
         chainID = 0
     }
-    console.log('selected manager dialog chain ' + chainID)
+    //console.log('selected manager dialog chain ' + chainID)
     return chainID
   }
 
@@ -664,6 +694,15 @@ export class Brain {
         if (this.stage != 3) {
           this.stage = 3
           this.setStageData(3)
+        }
+
+        break
+      case 2:
+        // categories: 0 box, 1 spray, 2 key, 3 trap 4 carts  5 hives
+        //collect mouse traps
+        if (this.stage != 5) {
+          this.stage = 5
+          this.setStageData(5)
         }
 
         break
