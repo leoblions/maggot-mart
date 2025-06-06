@@ -83,7 +83,7 @@ export class Pickup {
 
   async initPickupSpawnData () {
     //fetch returns a promise
-    let response = await fetch('./data/locationItem.json')
+    let response = await fetch('./data/location_target.json')
 
     this.spawndata = await response.json()
   }

@@ -145,11 +145,13 @@ export class Entity {
     this.changeDirectionPacer = Utils.createTickPacer(CHANGE_DIRECTION_PERIOD)
     this.changeFramePacer = Utils.createMillisecondPacer(FRAME_DURATION_MS)
     this.playerPressedActivate = false
+    this.actorLocationData = null
+    this.initActorLocationData()
     this.initImages()
     //debugger
     //this.addUnitToGrid(2, 2, 8, true)
-    this.addUnit(200, 200, 8, true)
-    this.addUnit(500, 200, 9, true)
+    //this.addUnit(200, 200, 8, true)
+    //this.addUnit(500, 200, 9, true)
 
     //this.addUnitToGrid(5, 6, 20, true)
   }
@@ -161,30 +163,53 @@ export class Entity {
     Entity.markerImages = Assets.markerImg
   }
 
-  async initImagesO () {
-    if (this.ready) {
-      return
-    }
-    let sheet = new Image()
-    sheet.src = './images/bugsheet0.png'
-    sheet.onload = () => {
-      Utils.cutSpriteSheetCallback(sheet, 4, 4, 150, 150, output => {
-        //debugger
-        this.imagesL = output
-        this.imagesR = Utils.applyFunctionToImageArray(output, Utils.flipImageH)
-
-        //this.images = this.imagesL.concat(this.imagesR)
-        Entity.imagesLoaded = true
-      })
-      // this.imagesR = Utils.applyFunctionToImageArray(
-      //   this.imagesL,
-      //   Utils.flipImageH
-      // )
-
-      console.log('enemy images loaded')
-      this.ready = true
-    }
+  async initActorLocationData () {
+    this.actorLocationData = await fetch('./data/location_actor.json')
+    this.actorLocationData = await this.actorLocationData.json()
+    this.placeActorOnGrid(8, 0)
+    this.placeActorOnGrid(9, 1)
   }
+
+  placeActorOnGrid (actorKind, locationID) {
+    for (let location of this.actorLocationData) {
+      if (location.locationID == locationID) {
+        this.addUnitToGrid(
+          location.gridX,
+          location.gridY,
+          actorKind,
+          location.level,
+          true
+        )
+        return
+      }
+    }
+    throw 'No matching locationID found ' + locationID
+  }
+
+  // async initImagesO () {
+  //   if (this.ready) {
+  //     return
+  //   }
+  //   let sheet = new Image()
+  //   sheet.src = './images/bugsheet0.png'
+  //   sheet.onload = () => {
+  //     Utils.cutSpriteSheetCallback(sheet, 4, 4, 150, 150, output => {
+  //       //debugger
+  //       this.imagesL = output
+  //       this.imagesR = Utils.applyFunctionToImageArray(output, Utils.flipImageH)
+
+  //       //this.images = this.imagesL.concat(this.imagesR)
+  //       Entity.imagesLoaded = true
+  //     })
+  //     // this.imagesR = Utils.applyFunctionToImageArray(
+  //     //   this.imagesL,
+  //     //   Utils.flipImageH
+  //     // )
+
+  //     console.log('enemy images loaded')
+  //     this.ready = true
+  //   }
+  // }
 
   spawnUnit () {
     let kind = Math.floor(Math.random() * MAX_KIND)
@@ -228,7 +253,7 @@ export class Entity {
     unit.level = level
     return unit
   }
-  addUnitToGrid (gridX, gridY, kind, forceAdd = false) {
+  addUnitToGrid (gridX, gridY, kind, level = 0, forceAdd = false) {
     let worldX = Math.round(gridX * this.game.tileSize)
     let worldY = Math.round(gridY * this.game.tileSize)
     let unit = null
@@ -237,7 +262,9 @@ export class Entity {
       if (!(element instanceof Unit) || !element.active) {
         if (forceAdd || this.spawnPacer()) {
           this.units[i] = new Unit(worldX, worldY, kind)
+
           unit = this.units[i]
+          unit.level = level
           //let worldX = Math.round(girdX * this.game.tileSize)
           //let worldY = Math.round(gridY * this.game.tileSize)
           console.log(`add unit type ${kind} X:${gridX}Y:${gridY}`)

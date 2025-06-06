@@ -1,0 +1,18 @@
+[
+  {
+    "markerID": 0,
+    "name": "box",
+    "_desc": "gridX, gridY, level",
+    "gridX": 8,
+    "gridY": 8,
+    "level": 0
+  },
+  {
+    "markerID": 1,
+    "name": "dumpster",
+    "_desc": "gridX, gridY, level",
+    "gridX": 16,
+    "gridY": 13,
+    "level": 2
+  }
+]

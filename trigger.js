@@ -40,8 +40,10 @@ class Unit {
 export class Trigger {
   static grid
   static lastInstance
+  static enabled
   constructor (game) {
     this.game = game
+    Trigger.enabled = true
     this.units = new Array(MAX_UNITS)
     this.checkTouchedPacer = new Utils.createMillisecondPacer(
       CHECK_TOUCHED_PERIOD
@@ -199,6 +201,7 @@ export class Trigger {
   }
 
   draw () {
+    if (!Trigger.enabled) return
     if (this.triggerZones == null) return
     for (let unit of this.triggerZones) {
       if (unit != null && unit.active) {
@@ -214,7 +217,6 @@ export class Trigger {
   }
 
   detectCollision = (a, b) => {
-    debugger
     return (
       a.worldX < b.worldX + b.width &&
       a.worldX + a.width > b.worldX &&
@@ -241,6 +243,7 @@ export class Trigger {
   }
 
   update () {
+    if (!Trigger.enabled) return
     let checkColl = this.checkTouchedPacer()
     if (this.triggerZones == null) return
     for (let unit of this.triggerZones) {
@@ -258,7 +261,7 @@ export class Trigger {
           unit.level == this.game.level &&
           this.detectCollision(unit, this.game.player)
         ) {
-          debugger
+          //debugger
           this.triggerAction(unit.actionID)
         }
       }

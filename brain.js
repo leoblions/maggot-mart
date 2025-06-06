@@ -42,7 +42,10 @@ const EK_OBJECTIVE = 20
  * Warps:
  * 0 dest level, 1 dest gridX, 2 dest gridY
  *
- * trigger -> actionID -> actionTable -> functionID
+ * trigger -> actionID -> actionTable -> functionID + arg
+ * Player steps on trigger zone, or some other trigger happens that
+ * calls a function in Brain with an actionID.  brain looks up the
+ * action object in the action table, then runs its corresponding function.
  *
  */
 
@@ -94,15 +97,16 @@ export class Brain {
       category: 0,
       complete: 0,
       incomplete: 0,
-      total: 1
+      total: 1,
+      markerID: -1
     }
-    this.warpDestinations = []
+    this.warpDestinations = null
     this.stageData = null
     this.itemLocationData = null
     this.markerLocationData = null
     this.cycleFlagsPacer = new Utils.createMillisecondPacer(CYCLE_FLAGS_PERIOD)
     this.clickAddPacer = new Utils.createMillisecondPacer(CLICK_ADD_PACER)
-    this.defaultInitializer()
+    //this.defaultInitializer()
     this.initStageData()
     this.initLocationData()
   }
@@ -123,6 +127,7 @@ export class Brain {
         this.objective.complete = 0
         this.objective.incomplete = record.amount
         this.objective.total = record.amount
+        this.objective.markerID = record?.markerID ?? -1
         this.setObjectiveText()
         break
       }
@@ -138,11 +143,18 @@ export class Brain {
 
   async initLocationData () {
     //fetch returns a promise
-    this.itemLocationData = await fetch('./data/locationItem.json')
+    this.itemLocationData = await fetch('./data/location_item.json')
     this.itemLocationData = await this.itemLocationData.json()
 
-    this.markerLocationData = await fetch('./data/locationMarker.json')
+    this.markerLocationData = await fetch('./data/location_marker.json')
     this.markerLocationData = await this.markerLocationData.json()
+
+    this.warpDestinations = await fetch('./data/warp_destinations.json')
+    this.warpDestinations = await this.warpDestinations.json()
+
+    this.actionTable = await fetch('./data/action_table.json')
+    this.actionTable = await this.actionTable.json()
+    Brain.actionTable = this.actionTable
   }
 
   getRandomItemLocation () {
@@ -218,18 +230,6 @@ export class Brain {
     this.game.hud.objectiveText.updateText(newText)
   }
 
-  defaultInitializer () {
-    // 0 dest level, 1 dest gridX, 2 dest gridY
-    this.warpDestinations = []
-    this.warpDestinations.push([0, 15, 1])
-    this.warpDestinations.push([1, 15, 18])
-
-    //actionID, nextActionID, enabled 0/1, functionID, functionArg
-    Brain.actionTable = []
-    Brain.actionTable.push([0, -1, 1, 0, 1]) // warp room 0 to 1
-    Brain.actionTable.push([1, -1, 1, 0, 0]) // warp room 1 to 0
-  }
-
   collectItemAction (category) {
     console.log('Pickup item category ' + category)
   }
@@ -265,17 +265,17 @@ export class Brain {
         return
       }
     }
-    let matchingRow = Brain.actionTable.find(function (element) {
-      return element[0] == actionID
+    let matchingObj = this.actionTable.find(function (element) {
+      return element.actionID == actionID
     })
-    if (undefined == matchingRow) {
+    if (undefined == matchingObj) {
       console.error('No matching actionTable record actionID ' + actionID)
       return
     } else {
       // unpack row array with spread operator
-      let action = new Action(...matchingRow)
-      this.queuedActions.push(action)
-      console.log('enqueued action ')
+      //let action = new Action(...matchingObj)
+      this.queuedActions.push(matchingObj)
+      console.log('enqueued action ' + actionID)
     }
   }
 
@@ -298,19 +298,19 @@ export class Brain {
     if (undefined != action) {
       switch (action.functionID) {
         case 0:
-          this.warp(action.functionArg)
+          this.warp(action.arg0)
           break
         case 1:
-          this.setFlag(action.functionArg)
+          this.setFlag(action.arg0)
           break
         case 2:
-          this.startDialog(action.functionArg)
+          this.startDialog(action.arg0)
           break
         case 3:
-          this.startCutscene(action.functionArg)
+          this.startCutscene(action.arg0)
           break
         default:
-          this.special(action.functionArg)
+          this.special(action.arg0)
           break
       }
       if (action.nextActionID != -1) {
@@ -319,12 +319,32 @@ export class Brain {
     }
   }
 
-  warp (warpID) {
-    const [destinationLevel, gridX, gridY] = this.warpDestinations[warpID] ?? [
-      -1, -1, -1
+  warp (destID) {
+    let foundIndex = -1
+    for (let i in this.warpDestinations) {
+      if (this.warpDestinations[i].destID == destID) {
+        foundIndex = i
+        break
+      }
+    }
+
+    // let index = this.warpDestinations.find((value, i, a) => {
+    //   if (value.destID == destID) {
+    //     return i
+    //   }
+    // })
+    let destUnit = this.warpDestinations[foundIndex] ?? undefined
+    if (destUnit == undefined) {
+      debugger
+      throw 'Matching destunit not found, id: ' + destID
+    }
+    const [destinationLevel, gridX, gridY] = [
+      destUnit.level,
+      destUnit.gridX,
+      destUnit.gridY
     ]
     if (destinationLevel == -1) {
-      console.error('Invalid level data for warpID ' + warpID)
+      console.error('Invalid level data for warpID ' + destID)
     }
     if (destinationLevel == this.game.level) {
       this.movePlayer(gridX, gridY)
@@ -384,23 +404,6 @@ export class Brain {
     //this.game.pickup.addObjectiveItemEnabled = true
     this.stageSpecificChanges()
     this.advanceStageIfObjectivesComplete()
-  }
-
-  stageSelect1 () {
-    const period = 20000
-
-    let now = Date.now()
-    //console.log(period)
-
-    if (this.SSlastTime == undefined || now - this.SSlastTime > period) {
-      let newStage = prompt('Enter stage number: ')
-      newStage = Number(newStage)
-      this.stage = newStage
-      this.setStageData(newStage)
-      //this.stageSelect = undefined
-    }
-    this.SSlastTime = now
-    this.stageSelectRequest = false
   }
 
   stageSelect () {
@@ -463,7 +466,12 @@ export class Brain {
 
     // player is carrying and objective marker is not set, set OM
     if (this.bflags.carry && !this.game.entity.objectiveMarkerIsSet()) {
-      this.game.entity.placeObjectiveMarker(8, 8, 0)
+      let markerObj = this.getMarkerObjectFromID(this.objective.markerID)
+      this.game.entity.placeObjectiveMarker(
+        markerObj.gridX,
+        markerObj.gridY,
+        markerObj.level
+      )
     }
 
     // if player is not carrying and no OI is active, create OI
@@ -484,6 +492,15 @@ export class Brain {
       }
     }
   }
+  getMarkerObjectFromID (markerID) {
+    for (let marker of this.markerLocationData) {
+      let currentID = marker?.markerID ?? -1
+      if (currentID == markerID) {
+        return marker
+      }
+    }
+    return null
+  }
 
   gatherThenDepositMission () {
     if (this.bflags.carry) {
@@ -494,24 +511,27 @@ export class Brain {
     }
 
     // have needed objectives been reached?
-    if (this.objective.complete >= this.objective.total) {
-      let location = this.getRandomItemLocation()
-      this.game.pickup.addObjectiveUnitXYLC(
-        location.gridX,
-        location.gridY,
-        location.level,
-        this.objective.category
-      )
-    }
+    // if (this.objective.complete >= this.objective.total) {
+    //   let location = this.getRandomItemLocation()
+    //   this.game.pickup.addObjectiveUnitXYLC(
+    //     location.gridX,
+    //     location.gridY,
+    //     location.level,
+    //     this.objective.category
+    //   )
+    // }
 
     // player touched marker
     if (this.bflags.markerPressed) {
+      this.objective.markerSet = false
+      this.advanceStageOnObjectiveCount = true
       this.bflags.readyForNextStage = true
     }
 
     // player has pickuped up OI and touched OM
+
     if (this.bflags.readyForNextObjective) {
-      let location = this.getRandomItemLocation()
+      let location = this.getNextItemLocation()
       this.game.pickup.addObjectiveUnitXYLC(
         location.gridX,
         location.gridY,
@@ -519,6 +539,21 @@ export class Brain {
         this.objective.category
       )
     }
+
+    // player collected enough OI, set OM
+    if (
+      this.objective.total == this.objective.complete &&
+      !(this.objective?.markerSet ?? false)
+    ) {
+      let markerObj = this.getMarkerObjectFromID(this.objective.markerID)
+      this.objective.markerSet = true
+      this.game.entity.placeObjectiveMarker(
+        markerObj.gridX,
+        markerObj.gridY,
+        markerObj.level
+      )
+    }
+
     // if player got OI and touched OM but does not have enough objectives
     if (this.bflags.readyForNextObjective && !this.bflags.readyForNextStage) {
       this.game.pickup.addObjectiveUnit(this.objective.category)
@@ -638,20 +673,30 @@ export class Brain {
       case 0:
         break
       case 1:
-        //debugger
+        //move boxes
+        this.objective.markerID = 0
         this.moveitemAtoBMission()
         break
       case 2:
         this.setObjectiveTextIntermission(INTERMISSION_0)
         break
       case 3:
+        // collect cans
+
         this.gatherMission()
         break
       case 4:
         this.setObjectiveTextIntermission(INTERMISSION_0)
         break
       case 5:
+        // mouse traps
+        this.objective.markerID = 1
         this.gatherThenDepositMission()
+
+        break
+      case 6:
+        this.setObjectiveTextIntermission(INTERMISSION_0)
+        break
       default:
         break
     }

@@ -7,7 +7,8 @@
     "stageID": 1,
     "category": 0,
     "amount": 2,
-    "mustCarry": true
+    "mustCarry": true,
+    "markerID": 0
   },
   {
     "stageID": 2,
@@ -25,6 +26,7 @@
     "stageID": 5,
     "category": 3,
     "amount": 4,
-    "mustCarry": false
+    "mustCarry": false,
+    "markerID": 1
   }
 ]

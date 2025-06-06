@@ -1,0 +1,32 @@
+[
+  {
+    "_fields_desc": "actionID, nextActionID, enabled 0/1, functionID, functionArg",
+    "_functionIDs_desc": "0 warp, 1 set flag, 2 dialog, 3 custcene",
+    "actionID": 0,
+    "nextActionID": -1,
+    "active": true,
+    "functionID": 0,
+    "arg0": 1
+  },
+  {
+    "actionID": 1,
+    "nextActionID": -1,
+    "active": true,
+    "functionID": 0,
+    "arg0": 0
+  },
+  {
+    "actionID": 2,
+    "nextActionID": -1,
+    "active": true,
+    "functionID": 0,
+    "arg0": 2
+  },
+  {
+    "actionID": 3,
+    "nextActionID": -1,
+    "active": true,
+    "functionID": 0,
+    "arg0": 3
+  }
+]

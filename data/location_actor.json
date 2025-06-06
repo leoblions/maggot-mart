@@ -1,0 +1,14 @@
+[
+  {
+    "locationID": 0,
+    "level": 0,
+    "gridX": 2,
+    "gridY": 1
+  },
+  {
+    "locationID": 1,
+    "level": 0,
+    "gridX": 5,
+    "gridY": 2
+  }
+]

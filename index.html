@@ -7,7 +7,7 @@
     <title>MAGGOT☆MART</title>
     <link rel="icon" type="image/x-icon" href="/images/favicon.ico" />
     <link rel="stylesheet" href="game.css" />
-    <script src="game.js" type="module"></script>
+    <script defer src="game.js" type="module"></script>
   </head>
   <body style="overflow: show">
     <canvas id="board"></canvas>
@@ -25,11 +25,19 @@
       <button id="resetgrid">Reset Grid</button>
       <button id="deletemode">Delete OFF</button>
       <button id="spawner">Spawner OFF</button>
+      <button id="trigger">trigger ON</button>
     </div>
     <br />
     <div id="editorData">
       <p id="editorDataPara">Editor data:</p>
     </div>
-    <canvas id="tempCanvas" style="display: none"></canvas>
+    <div id="gameData">
+      <p id="editorDataPara">Game data:</p>
+    </div>
+    <canvas
+      id="tempCanvas"
+      class="hidden_element_cls"
+      style="display: none"
+    ></canvas>
   </body>
 </html>

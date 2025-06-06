@@ -1,0 +1,30 @@
+[
+  {
+    "destID": 0,
+    "gridX": 15,
+    "gridY": 2,
+    "level": 0,
+    "desc": "front area top"
+  },
+  {
+    "destID": 1,
+    "gridX": 15,
+    "gridY": 18,
+    "level": 1,
+    "desc": "back area bottom"
+  },
+  {
+    "destID": 2,
+    "gridX": 15,
+    "gridY": 18,
+    "level": 2,
+    "desc": "alley bottom"
+  },
+  {
+    "destID": 3,
+    "gridX": 15,
+    "gridY": 2,
+    "level": 1,
+    "desc": "back area top"
+  }
+]

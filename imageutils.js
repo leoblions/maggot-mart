@@ -19,6 +19,14 @@ export async function getSubImageAsync1 (image, startX, startY, width, height) {
   return image
 }
 
+export async function initBugsheet () {
+  let sheet = new Image()
+  sheet.src = './images/bugsheet0.png'
+  let imagesL = await cutSpriteSheetAsync(sheet, 4, 4, 150, 150)
+
+  let imagesR = await Utils.applyFunctionToImageArray(output, Utils.flipImageH)
+}
+
 export async function cutSpriteSheetAsync (
   spritesheet,
   cols,

@@ -11,6 +11,7 @@ export const EditMode = Object.freeze({
   Entity: 3,
   Zone: 4
 })
+export const modeNames = ['tile', 'decor', 'widget', 'entity', 'zone']
 
 export class Editor {
   static mode = 0
@@ -44,11 +45,19 @@ export class Editor {
     this.addButtonListeners()
     //this.addPanelListener()
     Editor.setEditString()
+    this.gameDataPacer = Utils.createMillisecondPacer(5000)
   }
 
   static setEditString () {
-    Editor.editString = `Editor data: Mode:${Editor.mode} AssetID:${Editor.asset}`
+    let modeName = modeNames[Editor.mode]
+    Editor.editString = `Editor data: Mode:${modeName} AssetID:${Editor.asset}`
     Editor.editStringElement.innerText = Editor.editString
+  }
+
+  setGameString () {
+    let element = document.getElementById('gameData')
+    let gameDataString = `Game data: Stage:${this.game.brain.stage} Level:${this.game.level}`
+    element.innerText = gameDataString
   }
 
   addButtonListeners () {
@@ -76,6 +85,13 @@ export class Editor {
       Editor.setEditString()
       const deletemode = document.getElementById('deletemode')
       deletemode.innerText = Editor.delete ? 'Delete ON' : 'Delete OFF'
+    })
+
+    const trigger = document.getElementById('trigger')
+    trigger.addEventListener('click', () => {
+      Trigger.enabled = !Trigger.enabled
+      const trigger = document.getElementById('trigger')
+      trigger.innerText = Trigger.enabled ? 'Trigger ON' : 'Trigger OFF'
     })
 
     const spawner = document.getElementById('spawner')
@@ -201,6 +217,8 @@ export class Editor {
   }
 
   update () {
-    //
+    if (this.gameDataPacer()) {
+      this.setGameString()
+    }
   }
 }

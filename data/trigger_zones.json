@@ -1,5 +1,6 @@
 [
   {
+    "desc": "front area to storage area",
     "actionID": 0,
     "gridX": 15,
     "gridY": 0,
@@ -8,6 +9,7 @@
     "level": 0
   },
   {
+    "desc": "storage area to front area",
     "actionID": 1,
     "gridX": 15,
     "gridY": 19,
@@ -16,7 +18,8 @@
     "level": 1
   },
   {
-    "actionID": 1,
+    "desc": "back area to alley area",
+    "actionID": 2,
     "gridX": 15,
     "gridY": 0,
     "gridW": 2,
@@ -24,19 +27,21 @@
     "level": 1
   },
   {
-    "actionID": 1,
-    "gridX": 0,
-    "gridY": 2,
-    "gridW": 1,
+    "desc": "alley area to back area",
+    "actionID": 3,
+    "gridX": 15,
+    "gridY": 19,
+    "gridW": 2,
     "gridH": 1,
-    "level": 1
+    "level": 2
   },
   {
-    "actionID": 1,
-    "gridX": 0,
-    "gridY": 2,
+    "desc": "side door to back area",
+    "actionID": 4,
+    "gridX": 19,
+    "gridY": 6,
     "gridW": 1,
-    "gridH": 1,
+    "gridH": 2,
     "level": 1
   }
 ]

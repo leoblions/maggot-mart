@@ -14,6 +14,8 @@ const LEVEL_DATA_PREFIX = '/data/decor'
 const LEVEL_DATA_SUFFIX = '.txt'
 const LOAD_DEFAULT_LEVEL = false
 const TILE_TYPE_AMOUNT = 48
+const SHIFT_DECOR_DOWN_INDEX = 12
+const SHIFT_DECOR_DOWN_AMOUNT = 25
 
 export class Decor {
   static grid = null
@@ -54,24 +56,36 @@ export class Decor {
     }
   }
 
-  loadCurrentLevel () {
+  async loadCurrentLevel () {
     let currentLevelFile =
       LEVEL_DATA_PREFIX + this.game.level + LEVEL_DATA_SUFFIX
-    Utils.loadFileAsText(currentLevelFile).then(
-      function (value) {
-        let grid = Utils.stringToGrid(value)
-
-        //console.log(grid)
-        if (grid != undefined && grid != null && grid.length != 0) {
-          Decor.grid = grid
-          //Tilegrid.lastInstance.gridDataToUnitsList()
-        }
-      },
-      function (error) {
-        console.log('Load default level failed.')
-        console.log(error)
+    try {
+      let decorData = await Utils.loadFileAsText(currentLevelFile)
+      let grid = Utils.stringToGrid(decorData)
+      //check for garbage data
+      if (grid != undefined && grid != null && grid.length != 0) {
+        Decor.grid = grid
+      } else {
+        throw `file ${currentLevelFile}contained garbage`
       }
-    )
+    } catch (error) {
+      console.log('Load level failed. ' + currentLevelFile)
+      console.log(error)
+      console.log('creating empty table')
+      Decor.grid = this.emptyGrid()
+    }
+  }
+
+  emptyGrid () {
+    let grid = []
+    for (let y = 0; y < tilesY; y++) {
+      let row = []
+      for (let y = 0; y < tilesX; y++) {
+        row.push(DEFAULT_GROUND)
+      }
+      grid.push(row)
+    }
+    return grid
   }
 
   loadDefaultLevel () {
@@ -171,6 +185,9 @@ export class Decor {
         let screenX = x * this.tileSize - this.game.cameraX
         let screenY = y * this.tileSize - this.game.cameraY
         let kind = Decor.grid[y][x]
+        if (kind >= SHIFT_DECOR_DOWN_INDEX) {
+          screenY += SHIFT_DECOR_DOWN_AMOUNT
+        }
         let image = this.images[kind]
         if (null == image || kind == -1) continue
 

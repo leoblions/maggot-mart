@@ -13,3 +13,7 @@ body {
   background-color: black;
   background-image: url('./backgroundimg.png');
 }
+
+.hidden_element_cls {
+  display: none;
+}

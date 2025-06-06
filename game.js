@@ -174,6 +174,7 @@ window.onload = function () {
 
 function update () {
   game.input.update()
+
   let currMode = game.getMode()
   if (currMode == Game.modes.PLAY) {
     game.player.update()
@@ -182,7 +183,7 @@ function update () {
     game.projectile.update()
     game.entity.update()
     game.pathfind.update()
-
+    game.editor.update()
     game.hud.update()
     game.decor.update()
 
