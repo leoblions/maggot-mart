@@ -20,6 +20,26 @@
     ]
   },
   {
+    "chainID": 1,
+    "actionID": -1,
+    "speaker": [
+      "Elliot",
+      "Jess",
+      "Elliot",
+      "Elliot",
+      "Elliot",
+      "Jess"
+    ],
+    "line": [
+      "Hey Jess",
+      "Hi Elliot. What`s up?",
+      "Tired as hell.  My little nephew wouldn`t stop crying last night",
+      "I was taking out the trash in the back and almost tripped over a sleeping homeless guy",
+      "Watch out if you go back there",
+      "I`ll be careful"
+    ]
+  },
+  {
     "chainID": 2,
     "actionID": 1,
     "speaker": [
@@ -42,13 +62,37 @@
       "Jess",
       "Alfred",
       "Alfred",
+      "Jess",
+      "Alfred",
       "Alfred"
     ],
     "line": [
       "I gathered up those spray cans.  They're all completely empty.",
       "We went through those quickly, but there are more in the basement.",
-      "That reminds me, go pick up those sprung mousetraps in the front area.",
+      "We've been having a rat  problem too lately.",
+      "Let me guess, I have to go into the basement and kill 10 rodents of unusual size?",
+      "No silly, just go pick up those sprung mousetraps in the front area.",
       "Then go throw the mice in the dumpster out back"
+    ]
+  },
+  {
+    "chainID": 4,
+    "actionID": -1,
+    "speaker": [
+      "Jess",
+      "Elliot",
+      "Elliot",
+      "Jess",
+      "Elliot",
+      "Elliot"
+    ],
+    "line": [
+      "Hi Elliot, whats hoing on?.",
+      "I threw out a bunch of canned oysters, they expired in 1987!",
+      "It was hard to find the date on the cans.  Some of them were starting to rust through and smell",
+      "So that's where that rotting fish smell was comming from. You deserve a raise.",
+      "Absolutely. One broke apart and splashed me a bit",
+      "Some jerk customer was recording me and sneering too."
     ]
   }
 ]

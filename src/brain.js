@@ -98,7 +98,8 @@ export class Brain {
       complete: 0,
       incomplete: 0,
       total: 1,
-      markerID: -1
+      markerID: -1,
+      markers: 0
     }
     this.warpDestinations = null
     this.stageData = null
@@ -279,11 +280,15 @@ export class Brain {
     }
   }
 
-  playerActivateNPC (category) {
-    switch (category) {
+  playerActivateNPC (unitKind) {
+    switch (unitKind) {
       case EK_MANAGER:
-        let managerChainID = this.getManagerDialogChain()
-        this.game.dialog.startDialogChain(managerChainID)
+      case EK_ELLIOT:
+        //let managerChainID = this.getManagerDialogChain()
+        console.log('activate npc ' + unitKind)
+
+        let chainID = this.getActorDialogChain(unitKind)
+        this.game.dialog.startDialogChain(chainID)
         break
       case EK_OBJECTIVE:
         this.activateObjectiveMarker()
@@ -503,7 +508,8 @@ export class Brain {
   }
 
   gatherThenDepositMission () {
-    if (this.bflags.carry) {
+    // player picked up OI, and less than amount needed
+    if (this.bflags.carry && this.objective.complete < this.objective.total) {
       this.incrementObjectiveCounter()
       this.bflags.readyForNextObjective = true
       this.bflags.carry = false
@@ -526,6 +532,8 @@ export class Brain {
       this.objective.markerSet = false
       this.advanceStageOnObjectiveCount = true
       this.bflags.readyForNextStage = true
+    } else {
+      this.advanceStageOnObjectiveCount = false
     }
 
     // player has pickuped up OI and touched OM
@@ -718,6 +726,27 @@ export class Brain {
       default:
         chainID = 0
     }
+    //console.log('selected manager dialog chain ' + chainID)
+    return chainID
+  }
+
+  getActorDialogChain (actorID) {
+    let alfredChains = [0, 0, 2, 2, 3, 0]
+    let elliotChains = [1, 1, 1, 1, 1, 1]
+    let chainSet = null
+
+    switch (actorID) {
+      case 8:
+        chainSet = alfredChains
+        break
+      case 9:
+        chainSet = elliotChains
+        break
+
+      default:
+        chainSet = alfredChains
+    }
+    let chainID = chainSet.at(this.stage) ?? 0
     //console.log('selected manager dialog chain ' + chainID)
     return chainID
   }

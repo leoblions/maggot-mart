@@ -1,19 +1,33 @@
 body {
   font-family: 'Courier New', 'Courier', monospace;
   text-align: center;
+  resize: none;
+  border: none;
+}
+
+body,
+html {
+  margin: 0;
+  padding: 0;
 }
 
 #board {
+  border: none;
   background-color: black;
-  background-image: url('./images/bg50.png');
   background-repeat: repeat;
+  background-image: url('./images/ruins_cave.jpg');
 }
 
 #board2 {
   background-color: black;
-  background-image: url('./backgroundimg.png');
 }
 
 .hidden_element_cls {
+  display: none;
+}
+.editor {
+  display: none;
+}
+#gameData {
   display: none;
 }

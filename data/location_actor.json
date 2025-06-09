@@ -9,6 +9,12 @@
     "locationID": 1,
     "level": 0,
     "gridX": 5,
-    "gridY": 2
+    "gridY": 7
+  },
+  {
+    "locationID": 2,
+    "level": 0,
+    "gridX": 8,
+    "gridY": 8
   }
 ]

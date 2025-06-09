@@ -28,6 +28,7 @@ const CHARACTER_IMAGES_X = 6
 const CHARACTER_IMAGES_Y = 4
 const EK_MANAGER = 8
 const EK_ELLIOT = 9
+const EK_TREY = 10
 const EK_OBJECTIVE = 20
 const DEFAULT_ENEMIES_LIMIT = 3
 const OBJ_MARKER_ARRAY_INDEX = 4
@@ -55,31 +56,50 @@ class Unit {
     this.imageSet = 0 // up down left right
     this.level = Entity.currentLevel
     this.speed = Entity.speed
-    this.state = 'f' // s stand, f follow, a attack
+    this.state = 'f' // s stand, f follow, a attack, w wander
     this.direction = 'd' // u d l r
-    if (
-      this.kind == EK_MANAGER ||
-      this.kind == EK_ELLIOT ||
-      this.kind == EK_OBJECTIVE
-    ) {
-      this.state = 's'
-    }
-    this.isEnemy = false
-
-    if (this.kind == EK_MANAGER) {
-      this.width = 100
-      this.height = 120
-    } else if (this.kind == EK_ELLIOT) {
-      this.width = 100
-      this.height = 110
-    } else if (this.kind == EK_OBJECTIVE) {
-      this.deactivateOnInteract = true
-      this.width = 100
-      this.height = 100
-    } else {
-      this.isEnemy = true
-      this.width = SPRITE_WIDTH
-      this.height = SPRITE_HEIGHT
+    this.imageArray = null
+    this.imagesPerDirection = 6
+    // kind specific data
+    switch (this.kind) {
+      case EK_MANAGER:
+        this.imagesPerDirection = 4
+        this.width = 80
+        this.height = 120
+        this.state = 's'
+        this.imageArray = Entity.managerImages
+        this.isEnemy = false
+        break
+      case EK_ELLIOT:
+        this.width = 80
+        this.height = 110
+        this.state = 's'
+        this.imageArray = Entity.elliotImages
+        this.isEnemy = false
+        break
+      case EK_OBJECTIVE:
+        this.state = 's'
+        this.isEnemy = false
+        this.deactivateOnInteract = true
+        this.width = 100
+        this.height = 100
+        this.imageArray = Entity.markerImages
+        break
+      case EK_TREY:
+        this.imagesPerDirection = 4
+        this.state = 'w'
+        this.isEnemy = false
+        this.imageArray = Entity.treyImages
+        this.width = 80
+        this.height = 100
+        break
+      default:
+        this.isEnemy = true
+        this.state = 'f'
+        this.isEnemy = true
+        this.imageArray = Entity.bugImages
+        this.width = SPRITE_WIDTH
+        this.height = SPRITE_HEIGHT
     }
 
     this.imageID = 0 //which image to use for current frame, from array of images
@@ -90,16 +110,7 @@ class Unit {
     this.velX = 0
     this.velY = 0
     this.damageToPlayer = DAMAGE_TO_PLAYER
-    this.imageArray = null
-    if (this.kind < 8) {
-      this.imageArray = Entity.bugImages
-    } else if (this.kind == EK_MANAGER) {
-      this.imageArray = Entity.managerImages
-    } else if (this.kind == EK_ELLIOT) {
-      this.imageArray = Entity.elliotImages
-    } else if (this.kind == EK_OBJECTIVE) {
-      this.imageArray = Entity.markerImages
-    }
+
     //this.setFrameMinAndmax()
   }
   setFrameMinAndmax () {
@@ -160,6 +171,7 @@ export class Entity {
     Entity.bugImages = Assets.bugsA
     Entity.managerImages = Assets.managerImg
     Entity.elliotImages = Assets.elliotImg
+    Entity.treyImages = Assets.treyImg
     Entity.markerImages = Assets.markerImg
   }
 
@@ -168,6 +180,7 @@ export class Entity {
     this.actorLocationData = await this.actorLocationData.json()
     this.placeActorOnGrid(8, 0)
     this.placeActorOnGrid(9, 1)
+    this.placeActorOnGrid(10, 2)
   }
 
   placeActorOnGrid (actorKind, locationID) {
@@ -407,11 +420,28 @@ export class Entity {
       let maxValue = 0
       let maxIndex = -1
 
-      for (let i = 0; i < 5; i++) {
-        if (gridvalues[i] > maxValue) {
-          maxIndex = i
-          maxValue = gridvalues[i]
+      if (unit.state == 'f') {
+        for (let i = 0; i < 5; i++) {
+          if (gridvalues[i] > maxValue) {
+            maxIndex = i
+            maxValue = gridvalues[i]
+          }
         }
+      } else if (unit.state == 'w') {
+        for (let i = 0; i < 5; i++) {
+          if (gridvalues[i] != 0) {
+            let randval = Math.random()
+            if (randval > 0.8) {
+              maxIndex = i
+              break
+            }
+          }
+        }
+        if (maxIndex == -1) {
+          maxIndex = this?.lastIndex ?? 0
+        }
+      } else {
+        maxIndex = this?.lastIndex ?? 0
       }
 
       switch (maxIndex) {
@@ -443,6 +473,7 @@ export class Entity {
           unit.velX = 0
           unit.velY = 0
       }
+      unit.lastIndex = maxIndex
     }
   }
   setDirection (unit) {
@@ -467,39 +498,49 @@ export class Entity {
     if (unit.active) {
       let lastImageID = unit.imageID
 
-      if (unit.kind < 8) {
-        //bugs
-        let min = unit.kind * BUG_IMAGES_PER_ROW
-        let max = min + BUG_IMAGES_PER_ROW - 1
-        if (!unit.leftOfPlayer) {
-          min += IMAGES_IN_BUG_SPRITESHEET
-          max += IMAGES_IN_BUG_SPRITESHEET
-        }
-        if (unit.imageID < max && unit.imageID >= min) {
-          unit.imageID++
-        } else if (unit.imageID < min) {
-          unit.imageID = min
-        } else {
-          unit.imageID = min
-        }
-      } else if (EK_MANAGER == unit.kind) {
-        this.selectImageCharacter(unit)
-      } else if (EK_ELLIOT == unit.kind) {
-        this.selectImageCharacter(unit)
-      } else if (EK_OBJECTIVE == unit.kind) {
-        let min = 0
-        let max = 5
-        if (unit.imageID < max) {
-          unit.imageID++
-        } else {
-          unit.imageID = min
-        }
+      switch (unit.kind) {
+        case EK_MANAGER:
+        case EK_ELLIOT:
+        case EK_TREY:
+          this.selectImageCharacter(unit)
+          break
+        default:
+          // bugs
+          let min = unit.kind * BUG_IMAGES_PER_ROW
+          let max = min + BUG_IMAGES_PER_ROW - 1
+          if (!unit.leftOfPlayer) {
+            min += IMAGES_IN_BUG_SPRITESHEET
+            max += IMAGES_IN_BUG_SPRITESHEET
+          }
+          if (unit.imageID < max && unit.imageID >= min) {
+            unit.imageID++
+          } else if (unit.imageID < min) {
+            unit.imageID = min
+          } else {
+            unit.imageID = min
+          }
       }
+
+      // if (unit.kind < 8) {
+      //   //bugs
+      // } else if (EK_MANAGER == unit.kind) {
+      // } else if (EK_ELLIOT == unit.kind) {
+      //   this.selectImageCharacter(unit)
+      // } else if (EK_OBJECTIVE == unit.kind) {
+      //   let min = 0
+      //   let max = 5
+      //   if (unit.imageID < max) {
+      //     unit.imageID++
+      //   } else {
+      //     unit.imageID = min
+      //   }
+      // }
     }
   }
 
   selectImageCharacter (unit) {
     let imageSet = 0
+    debugger
     switch (unit.direction) {
       case 'u':
         imageSet = 0
@@ -514,17 +555,15 @@ export class Entity {
         imageSet = 3
         break
       default:
-        imageSet = 1
+        imageSet = 0
         break
     }
 
-    let min = imageSet * CHARACTER_IMAGES_X
-    let max = min + CHARACTER_IMAGES_X - 1
+    let min = imageSet * unit.imagesPerDirection
+    let max = min + unit.imagesPerDirection - 1
 
     if (unit.imageID < max && unit.imageID >= min) {
       unit.imageID++
-    } else if (unit.imageID < min) {
-      unit.imageID = min
     } else {
       unit.imageID = min
     }

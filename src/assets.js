@@ -6,7 +6,7 @@ export var fontBig, fontSmall, menuBtnImg, shinyButtons, titleImg, dialogImg
 // ENTITY
 export var bugsA, managerImg
 // SPECAL ENTITY
-export var elliotImg, claireImg
+export var elliotImg, claireImg, treyImg
 
 // WORLD OBJECT
 export var markerImg
@@ -61,6 +61,10 @@ export async function loadAssets (callbackFn) {
 
     let elliotSrc = './images/elliot2.png'
     let elliotSheet = await getImageData(elliotSrc)
+
+    let treySrc = './images/trey2.png'
+    let treySheet = await getImageData(treySrc)
+    treyImg = await Imageutils.cutSpriteSheetAsync(treySheet, 4, 4, 100, 200)
 
     let markerSrc = './images/marker.png'
     let markerSheet = await getImageData(markerSrc)
