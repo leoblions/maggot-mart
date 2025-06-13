@@ -193,7 +193,7 @@ export class Dialog {
   handleMessageChangeRequest () {
     if (this.changeMessageRequested) {
       if (this.active && this.dialogPacer()) {
-        console.log('advance chain')
+        //console.log('advance chain')
         this.advanceDialogChain()
       }
       this.changeMessageRequested = false

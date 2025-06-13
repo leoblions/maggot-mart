@@ -21,7 +21,7 @@ export function loadAssetsWG (callbackFn) {
     sheet.src = './images/font50horOL.png'
     wg.addTask()
     sheet.onload = () => {
-      font1 = Utils.cutSpriteSheet(sheet, 40, 1, 50, 50)
+      font1 = Utils.cutSpriteSheet(sheet, 72, 1, 50, 50)
 
       console.log('font images loaded')
       wg.subtractTask()
@@ -31,14 +31,14 @@ export function loadAssetsWG (callbackFn) {
 
 export async function loadAssets (callbackFn) {
   {
-    let fontBigsrc = './images/fontBig.png'
+    let fontBigsrc = './images/tecBig.png'
     let fontBigpromise = getImageData(fontBigsrc)
 
     let fontSmallsrc = './images/fontSmall.png'
     let fontSmallSheet = await getImageData(fontSmallsrc)
     fontSmall = await Imageutils.cutSpriteSheetAsync(
       fontSmallSheet,
-      40,
+      72,
       1,
       10,
       10
@@ -61,10 +61,29 @@ export async function loadAssets (callbackFn) {
 
     let elliotSrc = './images/elliot2.png'
     let elliotSheet = await getImageData(elliotSrc)
+    elliotImg = await Imageutils.cutSpriteSheetAsync(
+      elliotSheet,
+      6,
+      4,
+      100,
+      200
+    )
 
     let treySrc = './images/trey2.png'
     let treySheet = await getImageData(treySrc)
-    treyImg = await Imageutils.cutSpriteSheetAsync(treySheet, 4, 4, 100, 200)
+    let treyImgA = await Imageutils.cutSpriteSheetAsync(
+      treySheet,
+      4,
+      4,
+      100,
+      200
+    )
+    treyImgA = treyImgA.slice(0, 12)
+    let treyImgB = await Imageutils.flipImageArrayHorizontalAsync(
+      treyImgA.slice(8, 12)
+    )
+
+    treyImg = treyImgA.concat(treyImgB)
 
     let markerSrc = './images/marker.png'
     let markerSheet = await getImageData(markerSrc)
@@ -79,7 +98,7 @@ export async function loadAssets (callbackFn) {
       shinyBtnPromise,
       bugsAPromise
     ]).then(async values => {
-      fontBig = await Imageutils.cutSpriteSheetAsync(values[0], 40, 1, 50, 50)
+      fontBig = await Imageutils.cutSpriteSheetAsync(values[0], 72, 1, 50, 50)
 
       menuBtnImg = await Imageutils.cutSpriteSheetAsync(
         values[1],
@@ -100,13 +119,6 @@ export async function loadAssets (callbackFn) {
 
     managerImg = await Imageutils.cutSpriteSheetAsync(
       managerSheet,
-      4,
-      4,
-      100,
-      200
-    )
-    elliotImg = await Imageutils.cutSpriteSheetAsync(
-      elliotSheet,
       4,
       4,
       100,

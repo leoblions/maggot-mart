@@ -13,6 +13,7 @@ const FRAME_DURATION_MS = 300
 const ENTITY_SPEED = 2
 const MAX_KIND = 3
 const CHANGE_DIRECTION_PERIOD = 40
+const CHANGE_DIRECTION_PERIOD_W = 1000
 const PF_SPRITE_OFFSET_X = -50
 const PF_SPRITE_OFFSET_Y = -50
 const FRAMES_PER_KIND = 4
@@ -71,6 +72,7 @@ class Unit {
         this.isEnemy = false
         break
       case EK_ELLIOT:
+        this.imagesPerDirection = 6
         this.width = 80
         this.height = 110
         this.state = 's'
@@ -78,7 +80,9 @@ class Unit {
         this.isEnemy = false
         break
       case EK_OBJECTIVE:
+        this.imagesPerDirection = 6
         this.state = 's'
+        this.direction = 'u'
         this.isEnemy = false
         this.deactivateOnInteract = true
         this.width = 100
@@ -92,6 +96,7 @@ class Unit {
         this.imageArray = Entity.treyImages
         this.width = 80
         this.height = 100
+        this.speed = 1
         break
       default:
         this.isEnemy = true
@@ -113,12 +118,12 @@ class Unit {
 
     //this.setFrameMinAndmax()
   }
-  setFrameMinAndmax () {
-    //do not use
-    this.frameMin = FRAMES_PER_KIND * this.kind
-    this.imageID = this.frameMin
-    this.frameMax = FRAMES_PER_KIND * this.kind + FRAMES_PER_KIND - 1
-  }
+  // setFrameMinAndmax () {
+  //   //do not use
+  //   this.frameMin = FRAMES_PER_KIND * this.kind
+  //   this.imageID = this.frameMin
+  //   this.frameMax = FRAMES_PER_KIND * this.kind + FRAMES_PER_KIND - 1
+  // }
 
   takeDamage (damageAmount = DEFAULT_DAMAGE_FROM_PLAYER) {
     let newLife = this.life - damageAmount
@@ -154,6 +159,9 @@ export class Entity {
     this.units = new Array(MAX_UNITS)
     this.spawnPacer = Utils.createMillisecondPacer(SPAWN_RATE)
     this.changeDirectionPacer = Utils.createTickPacer(CHANGE_DIRECTION_PERIOD)
+    this.changeDirectionWander = Utils.createTickPacer(
+      CHANGE_DIRECTION_PERIOD_W
+    )
     this.changeFramePacer = Utils.createMillisecondPacer(FRAME_DURATION_MS)
     this.playerPressedActivate = false
     this.actorLocationData = null
@@ -239,6 +247,49 @@ export class Entity {
       }
     }
   }
+
+  moveEntityToActorPosition (kind, locationID) {
+    let positionRecord = null
+    for (let location of this.actorLocationData) {
+      if (location.locationID == locationID) {
+        positionRecord = location
+        break
+      }
+    }
+    if (positionRecord == null) {
+      debugger
+      throw 'No matching locationRecord found ' + positionRecord
+    }
+
+    let [matchedEntity] = this.units.filter(unit => {
+      return unit.kind == kind
+    })
+    if (undefined != matchedEntity) {
+      Object.assign(matchedEntity, {
+        gridX: positionRecord.gridX,
+        gridY: positionRecord.gridY,
+        level: positionRecord.level,
+        worldX: Math.round(positionRecord.gridX * this.game.tileSize),
+        worldY: Math.round(positionRecord.gridY * this.game.tileSize)
+      })
+      return true
+    } else {
+      return false
+    }
+  }
+
+  moveEntityToGridXY (kind, gridX, gridY, level) {
+    let [matchedEntity] = this.units.filter(val, index, () => {
+      return value.kind == kind
+    })
+    if (undefined != matchedEntity) {
+      Object.assign(matchedEntity, { gridX, gridY, level })
+      return true
+    } else {
+      return false
+    }
+  }
+
   placeObjectiveMarker (gridX, gridY, level) {
     let index = OBJ_MARKER_ARRAY_INDEX
     let kind = EK_OBJECTIVE
@@ -248,7 +299,7 @@ export class Entity {
       this.units[index].active = true
       this.units[index].visible = true
     }
-    console.log('added objective marker')
+    console.log('added objective marker ' + level)
   }
   objectiveMarkerIsSet () {
     let marker = this.units[OBJ_MARKER_ARRAY_INDEX]
@@ -326,6 +377,7 @@ export class Entity {
         let imageArray = element.imageArray
         let currImage = imageArray[element.imageID]
         //debugger
+
         if (currImage) {
           this.game.ctx.drawImage(
             currImage,
@@ -355,16 +407,16 @@ export class Entity {
         case 'N':
           break
         case 'U':
-          unit.velY = -Entity.speed
+          unit.velY = -unit.speed
           break
         case 'D':
-          unit.velY = Entity.speed
+          unit.velY = unit.speed
           break
         case 'L':
-          unit.velX = -Entity.speed
+          unit.velX = -unit.speed
           break
         case 'R':
-          unit.velX = Entity.speed
+          unit.velX = unit.speed
           break
         default:
       }
@@ -378,7 +430,7 @@ export class Entity {
       } else if (!unit.isEnemy && this.playerPressedActivate) {
         //activate NPC
 
-        console.log('player activate npc ' + unit.kind)
+        //console.log('player activate npc ' + unit.kind)
         this.game.brain.playerActivateNPC(unit.kind)
         if (unit.deactivateOnInteract) {
           unit.active = false
@@ -393,29 +445,25 @@ export class Entity {
   }
 
   entityMotion (unit) {
-    let pathfindX = unit.worldX - PF_SPRITE_OFFSET_X
-    let pathfindY = unit.worldY - PF_SPRITE_OFFSET_Y
-    unit.velY = 0
-    unit.velX = 0
-
-    // if (this.game.pathfind.entityMatchesPlayerSquare(pathfindX, pathfindY)) {
-
-    //   return
-    // }
-
     if (unit.state == 's') {
       // standing
       return
     }
 
-    let gridvalues = this.game.pathfind.entitySteeringMatrix(
-      pathfindX,
-      pathfindY
-    )
     //up down left right center
     if (this.changeDirectionPacer()) {
       unit.velX = 0
       unit.velY = 0
+      let pathfindX = unit.worldX - PF_SPRITE_OFFSET_X
+      let pathfindY = unit.worldY - PF_SPRITE_OFFSET_Y
+      let gridvalues = this.game.pathfind.entitySteeringMatrix(
+        pathfindX,
+        pathfindY
+      )
+
+      if (unit.kind == EK_TREY) {
+        // debugger
+      }
 
       let maxValue = 0
       let maxIndex = -1
@@ -428,54 +476,65 @@ export class Entity {
           }
         }
       } else if (unit.state == 'w') {
-        for (let i = 0; i < 5; i++) {
-          if (gridvalues[i] != 0) {
-            let randval = Math.random()
-            if (randval > 0.8) {
-              maxIndex = i
-              break
+        if (undefined != unit.lastIndex) {
+          maxIndex = unit.lastIndex
+          let possDirections = []
+          for (let i = 0; i < 5; i++) {
+            if (gridvalues[i] > 0) {
+              possDirections.push(i)
             }
           }
+
+          let randval = Math.random()
+          let randIndex = Math.round(randval * possDirections.length)
+          maxIndex = randIndex
+        } else {
+          maxIndex = 4
         }
-        if (maxIndex == -1) {
-          maxIndex = this?.lastIndex ?? 0
-        }
-      } else {
-        maxIndex = this?.lastIndex ?? 0
       }
 
-      switch (maxIndex) {
-        case -1:
-          unit.velX = 0
-          unit.velY = 0
-          break
-        case 0: //up
-          unit.velX = 0
-          unit.velY = -Entity.speed
-          break
-        case 1: //down
-          unit.velX = 0
-          unit.velY = Entity.speed
-          break
-        case 2: //left
-          unit.velX = -Entity.speed
-          unit.velY = 0
-          break
-        case 3: //down
-          unit.velX = Entity.speed
-          unit.velY = 0
-          break
-        case 4: //center
-          unit.velX = 0
-          unit.velY = 0
-          break
-        default:
-          unit.velX = 0
-          unit.velY = 0
+      let collSides = this.game.collision.entityCollideTile(unit)
+      if (collSides[maxIndex] == false) {
+        switch (maxIndex) {
+          case -1:
+            unit.velX = 0
+            unit.velY = 0
+            break
+          case 0: //up
+            unit.velX = 0
+            unit.direction = 'u'
+            unit.velY = -Entity.speed
+            break
+          case 1: //down
+            unit.velX = 0
+            unit.direction = 'd'
+            unit.velY = Entity.speed
+            break
+          case 2: //left
+            unit.velX = -Entity.speed
+            unit.direction = 'l'
+            unit.velY = 0
+            break
+          case 3: //down
+            unit.velX = Entity.speed
+            unit.direction = 'r'
+            unit.velY = 0
+            break
+          case 4: //center
+            unit.velX = 0
+            unit.direction = 'd'
+            unit.velY = 0
+            break
+          default:
+            unit.velX = 0
+            unit.velY = 0
+        }
       }
+
       unit.lastIndex = maxIndex
     }
   }
+
   setDirection (unit) {
     if (unit.velX > 0) {
       unit.direction = 'r'
@@ -483,7 +542,7 @@ export class Entity {
       unit.direction = 'l'
     } else if (unit.velY > 0) {
       unit.direction = 'd'
-    } else if (unit.velX < 0) {
+    } else if (unit.velY < 0) {
       unit.direction = 'u'
     } else {
       unit.direction = 'd'
@@ -497,6 +556,9 @@ export class Entity {
   entitySelectImage (unit) {
     if (unit.active) {
       let lastImageID = unit.imageID
+      let cycleImageHere = false
+      let min = 0
+      let max = 0
 
       switch (unit.kind) {
         case EK_MANAGER:
@@ -504,43 +566,40 @@ export class Entity {
         case EK_TREY:
           this.selectImageCharacter(unit)
           break
+        case EK_OBJECTIVE:
+          cycleImageHere = true
+          min = 0
+          max = 6
+          break
         default:
           // bugs
-          let min = unit.kind * BUG_IMAGES_PER_ROW
-          let max = min + BUG_IMAGES_PER_ROW - 1
+          cycleImageHere = true
+          min = unit.kind * BUG_IMAGES_PER_ROW
+          max = min + BUG_IMAGES_PER_ROW - 1
           if (!unit.leftOfPlayer) {
             min += IMAGES_IN_BUG_SPRITESHEET
             max += IMAGES_IN_BUG_SPRITESHEET
           }
-          if (unit.imageID < max && unit.imageID >= min) {
-            unit.imageID++
-          } else if (unit.imageID < min) {
-            unit.imageID = min
-          } else {
-            unit.imageID = min
-          }
       }
 
-      // if (unit.kind < 8) {
-      //   //bugs
-      // } else if (EK_MANAGER == unit.kind) {
-      // } else if (EK_ELLIOT == unit.kind) {
-      //   this.selectImageCharacter(unit)
-      // } else if (EK_OBJECTIVE == unit.kind) {
-      //   let min = 0
-      //   let max = 5
-      //   if (unit.imageID < max) {
-      //     unit.imageID++
-      //   } else {
-      //     unit.imageID = min
-      //   }
-      // }
+      if (cycleImageHere) {
+        if (unit.imageID < max && unit.imageID >= min) {
+          unit.imageID++
+        } else if (unit.imageID < min) {
+          unit.imageID = min
+        } else {
+          unit.imageID = min
+        }
+      }
     }
   }
 
   selectImageCharacter (unit) {
     let imageSet = 0
-    debugger
+    if (unit.kind == EK_OBJECTIVE) {
+      return
+    }
+
     switch (unit.direction) {
       case 'u':
         imageSet = 0
@@ -557,6 +616,9 @@ export class Entity {
       default:
         imageSet = 0
         break
+    }
+    if (unit.kind == EK_OBJECTIVE) {
+      debugger
     }
 
     let min = imageSet * unit.imagesPerDirection
@@ -604,7 +666,7 @@ export class Entity {
         if (unit.active) {
           this.entityPlayerInteract(unit)
           this.entityMotion(unit)
-          this.setDirection(unit)
+          //this.setDirection(unit)
           changeFrame && this.entitySelectImage(unit)
           unit.leftOfPlayer = unit.worldX < this.game.player.worldX
           unit.worldX += unit.velX

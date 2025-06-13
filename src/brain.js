@@ -11,6 +11,8 @@ const LEVEL_DATA_PREFIX = '/data/actionTable'
 const LEVEL_DATA_SUFFIX = '.txt'
 const LOAD_DEFAULT_LEVEL = false
 const DEFAULT_ITEM_SPAWN_STAGE = 0
+const BOSS_OFFICE_POSITION = 3
+
 const INTERMISSION_0 = 'talk to boss'
 const INTERMISSION_1 = 'talk to elliot'
 const BLOCK_DUPLICATE_CONSECUTIVE_ACTIONS = true
@@ -80,6 +82,7 @@ export class Brain {
 
     this.advanceStageOnObjectiveCount = true
     this.queuedActions = [] //actions to be processed
+    this.stageFlags = {}
     /**
      * carry = player is carrying obj item
      * must carry = player must be carrying to activate obj marker
@@ -230,6 +233,24 @@ export class Brain {
   setObjectiveTextIntermission (newText) {
     this.game.hud.objectiveText.updateText(newText)
   }
+  intermissionSpecialActions () {
+    switch (this.stage) {
+      case 6:
+        if (
+          this.stageFlags?.moved == undefined ||
+          this.stageFlags?.moved == false
+        ) {
+          this.stageFlags.moved = true
+          this.game.entity.moveEntityToActorPosition(
+            EK_MANAGER,
+            BOSS_OFFICE_POSITION
+          )
+        }
+        break
+      default:
+        break
+    }
+  }
 
   collectItemAction (category) {
     console.log('Pickup item category ' + category)
@@ -285,7 +306,7 @@ export class Brain {
       case EK_MANAGER:
       case EK_ELLIOT:
         //let managerChainID = this.getManagerDialogChain()
-        console.log('activate npc ' + unitKind)
+        //console.log('activate npc ' + unitKind)
 
         let chainID = this.getActorDialogChain(unitKind)
         this.game.dialog.startDialogChain(chainID)
@@ -516,17 +537,6 @@ export class Brain {
       this.bflags.markerPressed = false
     }
 
-    // have needed objectives been reached?
-    // if (this.objective.complete >= this.objective.total) {
-    //   let location = this.getRandomItemLocation()
-    //   this.game.pickup.addObjectiveUnitXYLC(
-    //     location.gridX,
-    //     location.gridY,
-    //     location.level,
-    //     this.objective.category
-    //   )
-    // }
-
     // player touched marker
     if (this.bflags.markerPressed) {
       this.objective.markerSet = false
@@ -704,6 +714,7 @@ export class Brain {
         break
       case 6:
         this.setObjectiveTextIntermission(INTERMISSION_0)
+        this.intermissionSpecialActions()
         break
       default:
         break
@@ -731,8 +742,8 @@ export class Brain {
   }
 
   getActorDialogChain (actorID) {
-    let alfredChains = [0, 0, 2, 2, 3, 0]
-    let elliotChains = [1, 1, 1, 1, 1, 1]
+    let alfredChains = [0, 0, 2, 2, 3, 3, 6, 6]
+    let elliotChains = [1, 1, 1, 1, 5, 5, 5, 5]
     let chainSet = null
 
     switch (actorID) {

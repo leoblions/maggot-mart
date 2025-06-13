@@ -16,5 +16,11 @@
     "level": 0,
     "gridX": 8,
     "gridY": 8
+  },
+  {
+    "locationID": 3,
+    "level": 1,
+    "gridX": 12,
+    "gridY": 8
   }
 ]

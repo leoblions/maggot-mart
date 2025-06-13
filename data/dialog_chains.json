@@ -11,8 +11,8 @@
       "Jess"
     ],
     "line": [
-      "Good morning Alfred",
-      "Hi Jess. I need you to start stocking the shelves.",
+      "Hello Alfred",
+      "Hi Jess. I need you to start stocking the shelves over there.",
       "Matt already pulled down the boxes for you in the stockroom.",
       "And clean up the produce customers keep leaving on the floor!",
       "Come see me when you're done stocking.",
@@ -93,6 +93,46 @@
       "So that's where that rotting fish smell was comming from. You deserve a raise.",
       "Absolutely. One broke apart and splashed me a bit",
       "Some jerk customer was recording me and sneering too."
+    ]
+  },
+  {
+    "chainID": 5,
+    "actionID": -1,
+    "speaker": [
+      "Jess",
+      "Elliot",
+      "Elliot",
+      "Jess",
+      "Elliot",
+      "Elliot"
+    ],
+    "line": [
+      "Whats up?.",
+      "Alfred had me burning weeds in the parking lot with the propane flamethrower",
+      "It was satisflying, but makes me hungry for barbecue",
+      "I hit an anthill and sparks went everywhere!",
+      "Be careful with that",
+      "The boss has me training you on the cash register tomorrow since we didn't get to it today."
+    ]
+  },
+  {
+    "chainID": 6,
+    "actionID": -1,
+    "speaker": [
+      "Jess",
+      "Alfred",
+      "Alfred",
+      "Jess",
+      "Alfred",
+      "Alfred"
+    ],
+    "line": [
+      "Those mice smelled awful",
+      "One last task before you leave, those trash cans out front need emptying.",
+      "It was satisflying, but makes me hungry for barbecue",
+      "I hit an anthill and sparks went everywhere!",
+      "Be careful with that",
+      "The boss has me training you on the cash register tomorrow since we didn't get to it today."
     ]
   }
 ]

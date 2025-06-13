@@ -1,7 +1,7 @@
 import * as Utils from './utils.js'
 import * as Assets from './assets.js'
-const alphabet =
-  'abcdefghijklmnopqrstuvwxyz1234567890 ~!@#$%^&*()_+-=[]`{}|;`:",./<>?'
+//delimit with backticks since theyre not needed
+const alphabet = `abcdefghijklmnopqrstuvwxyz1234567890 ~!@#$%^&*()_+-=[]\\{}|;':",./<>?`
 let revetment = {}
 const LETTER_SIZE_BIG = 18
 const LETTER_SIZE_SMALL = 10
