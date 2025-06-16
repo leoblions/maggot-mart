@@ -79,5 +79,32 @@
         "level": 0
       }
     ]
+  },
+  {
+    "stage": 7,
+    "name": "stage 7 trash, basement",
+    "note": "gridX, gridY, roomID",
+    "locations": [
+      {
+        "gridX": 17,
+        "gridY": 3,
+        "level": 0
+      },
+      {
+        "gridX": 17,
+        "gridY": 5,
+        "level": 0
+      },
+      {
+        "gridX": 9,
+        "gridY": 4,
+        "level": 0
+      },
+      {
+        "gridX": 9,
+        "gridY": 14,
+        "level": 0
+      }
+    ]
   }
 ]

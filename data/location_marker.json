@@ -14,5 +14,21 @@
     "gridX": 16,
     "gridY": 13,
     "level": 2
+  },
+  {
+    "markerID": 2,
+    "name": "trash can",
+    "_desc": "gridX, gridY, level",
+    "gridX": 17,
+    "gridY": 3,
+    "level": 1
+  },
+  {
+    "markerID": 3,
+    "name": "bags basement",
+    "_desc": "gridX, gridY, level",
+    "gridX": 17,
+    "gridY": 17,
+    "level": 3
   }
 ]

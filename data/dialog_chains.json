@@ -117,11 +117,8 @@
   },
   {
     "chainID": 6,
-    "actionID": -1,
+    "actionID": 3,
     "speaker": [
-      "Jess",
-      "Alfred",
-      "Alfred",
       "Jess",
       "Alfred",
       "Alfred"
@@ -129,10 +126,47 @@
     "line": [
       "Those mice smelled awful",
       "One last task before you leave, those trash cans out front need emptying.",
-      "It was satisflying, but makes me hungry for barbecue",
-      "I hit an anthill and sparks went everywhere!",
-      "Be careful with that",
-      "The boss has me training you on the cash register tomorrow since we didn't get to it today."
+      "Talk to Elliot before you go, he has something to tell you"
+    ]
+  },
+  {
+    "chainID": 7,
+    "actionID": -1,
+    "speaker": [
+      "Jess",
+      "Jess",
+      "Jess"
+    ],
+    "line": [
+      "Damn, there's no more trash bags",
+      "Usually we put a few new ones in the bottom of the can.",
+      "I'll have to get some from the basement"
+    ]
+  },
+  {
+    "chainID": 8,
+    "actionID": -1,
+    "speaker": [
+      "Elliot",
+      "Elliot"
+    ],
+    "line": [
+      "I heard some boxes tip over in the basement, and saw something big scamper away.",
+      "Probably a cat"
+    ]
+  },
+  {
+    "chainID": 9,
+    "actionID": -1,
+    "speaker": [
+      "Jess",
+      "Door",
+      "Jess"
+    ],
+    "line": [
+      "Here are the bags",
+      "Ka klunk!",
+      "Hey! Don't lock me in here!"
     ]
   }
 ]

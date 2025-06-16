@@ -28,5 +28,13 @@
     "amount": 4,
     "mustCarry": false,
     "markerID": 1
+  },
+  {
+    "desc": "trash can",
+    "stageID": 7,
+    "category": 3,
+    "amount": 4,
+    "mustCarry": false,
+    "markerID": 1
   }
 ]

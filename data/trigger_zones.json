@@ -36,12 +36,21 @@
     "level": 2
   },
   {
-    "desc": "side door to back area",
+    "desc": "basement door to back area",
     "actionID": 4,
-    "gridX": 19,
-    "gridY": 6,
+    "gridX": 13,
+    "gridY": 10,
     "gridW": 1,
-    "gridH": 2,
+    "gridH": 1,
     "level": 1
+  },
+  {
+    "desc": "basement door to back area",
+    "actionID": 5,
+    "gridX": 13,
+    "gridY": 10,
+    "gridW": 1,
+    "gridH": 1,
+    "level": 3
   }
 ]

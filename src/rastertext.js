@@ -2,6 +2,7 @@ import * as Utils from './utils.js'
 import * as Assets from './assets.js'
 //delimit with backticks since theyre not needed
 const alphabet = `abcdefghijklmnopqrstuvwxyz1234567890 ~!@#$%^&*()_+-=[]\\{}|;':",./<>?`
+
 let revetment = {}
 const LETTER_SIZE_BIG = 18
 const LETTER_SIZE_SMALL = 10
@@ -98,6 +99,11 @@ export class Rastertext {
     this.units.push(unit)
     return unit
   }
+  addUnitToIndex (screenX, screenY, index, content) {
+    let unit = new Unit(screenX, screenY, content, this.kind)
+    this.units[index] = unit
+    return unit
+  }
 
   createLabel (text) {
     //create blank image
@@ -165,7 +171,7 @@ export class Rastertext {
       return
     }
     for (const unit of this.units) {
-      if (unit != null && unit instanceof Unit) {
+      if (unit != null && unit instanceof Unit && unit.active) {
         this.drawUnit(unit)
       }
     }

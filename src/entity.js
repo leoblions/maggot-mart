@@ -30,7 +30,8 @@ const CHARACTER_IMAGES_Y = 4
 const EK_MANAGER = 8
 const EK_ELLIOT = 9
 const EK_TREY = 10
-const EK_OBJECTIVE = 20
+const EK_DARRYL = 11
+const EK_TARGET = 20
 const DEFAULT_ENEMIES_LIMIT = 3
 const OBJ_MARKER_ARRAY_INDEX = 4
 /*
@@ -79,7 +80,16 @@ class Unit {
         this.imageArray = Entity.elliotImages
         this.isEnemy = false
         break
-      case EK_OBJECTIVE:
+      case EK_DARRYL:
+        this.imagesPerDirection = 4
+        this.state = 'w'
+        this.isEnemy = false
+        this.imageArray = Entity.darrylImages
+        this.width = 80
+        this.height = 100
+        this.speed = 1
+        break
+      case EK_TARGET:
         this.imagesPerDirection = 6
         this.state = 's'
         this.direction = 'u'
@@ -151,6 +161,7 @@ export class Entity {
   constructor (game) {
     this.ready = false
     this.game = game
+    this.changeDirectionActive = false // pacer has fired, change direction in units
     this.currentEnemiesLimit = DEFAULT_ENEMIES_LIMIT
     Entity.currentLevel = this.game.level
     this.worldXMax = this.game.tileSize * this.game.tilegrid.tilesX
@@ -180,15 +191,17 @@ export class Entity {
     Entity.managerImages = Assets.managerImg
     Entity.elliotImages = Assets.elliotImg
     Entity.treyImages = Assets.treyImg
+    Entity.darrylImages = Assets.darrylImg
     Entity.markerImages = Assets.markerImg
   }
 
   async initActorLocationData () {
     this.actorLocationData = await fetch('./data/location_actor.json')
     this.actorLocationData = await this.actorLocationData.json()
-    this.placeActorOnGrid(8, 0)
-    this.placeActorOnGrid(9, 1)
-    this.placeActorOnGrid(10, 2)
+    this.placeActorOnGrid(EK_MANAGER, 0)
+    this.placeActorOnGrid(EK_ELLIOT, 1)
+    this.placeActorOnGrid(EK_TREY, 2)
+    this.placeActorOnGrid(EK_DARRYL, 5)
   }
 
   placeActorOnGrid (actorKind, locationID) {
@@ -290,9 +303,9 @@ export class Entity {
     }
   }
 
-  placeObjectiveMarker (gridX, gridY, level) {
+  placeTarget (gridX, gridY, level) {
     let index = OBJ_MARKER_ARRAY_INDEX
-    let kind = EK_OBJECTIVE
+    let kind = EK_TARGET
 
     this.units[index] = this.createUnitGridLoc(gridX, gridY, kind, level)
     if (level == this.game.level) {
@@ -301,7 +314,7 @@ export class Entity {
     }
     console.log('added objective marker ' + level)
   }
-  objectiveMarkerIsSet () {
+  targetIsSet () {
     let marker = this.units[OBJ_MARKER_ARRAY_INDEX]
     if (marker != null && (marker.active || marker.level != this.game.level)) {
       return true
@@ -317,10 +330,12 @@ export class Entity {
     unit.level = level
     return unit
   }
+
   addUnitToGrid (gridX, gridY, kind, level = 0, forceAdd = false) {
     let worldX = Math.round(gridX * this.game.tileSize)
     let worldY = Math.round(gridY * this.game.tileSize)
     let unit = null
+
     for (let i = 0; i < MAX_UNITS; i++) {
       let element = this.units[i]
       if (!(element instanceof Unit) || !element.active) {
@@ -427,19 +442,22 @@ export class Entity {
     if (this.entityTouchPlayer(unit)) {
       if (unit.isEnemy) {
         this.game.player.playerHitByEnemy(unit)
-      } else if (!unit.isEnemy && this.playerPressedActivate) {
+      } else if (!unit.isEnemy) {
+        this.game.hud.interactText.active = true
         //activate NPC
+        if (this.playerPressedActivate) {
+          this.game.brain.playerActivateNPC(unit.kind)
+          if (unit.deactivateOnInteract) {
+            unit.active = false
+            unit.life = 0
+            console.log(
+              `deactivated unit kind ${unit.kind} at array pos ${unit.index}`
+            )
+          }
+          this.playerPressedActivate = false
+        }
 
         //console.log('player activate npc ' + unit.kind)
-        this.game.brain.playerActivateNPC(unit.kind)
-        if (unit.deactivateOnInteract) {
-          unit.active = false
-          unit.life = 0
-          console.log(
-            `deactivated unit kind ${unit.kind} at array pos ${unit.index}`
-          )
-        }
-        this.playerPressedActivate = false
       }
     }
   }
@@ -451,7 +469,7 @@ export class Entity {
     }
 
     //up down left right center
-    if (this.changeDirectionPacer()) {
+    if (this.changeDirectionActive) {
       unit.velX = 0
       unit.velY = 0
       let pathfindX = unit.worldX - PF_SPRITE_OFFSET_X
@@ -460,10 +478,6 @@ export class Entity {
         pathfindX,
         pathfindY
       )
-
-      if (unit.kind == EK_TREY) {
-        // debugger
-      }
 
       let maxValue = 0
       let maxIndex = -1
@@ -476,6 +490,8 @@ export class Entity {
           }
         }
       } else if (unit.state == 'w') {
+        if (unit.kind == EK_TREY) {
+        }
         if (undefined != unit.lastIndex) {
           maxIndex = unit.lastIndex
           let possDirections = []
@@ -564,9 +580,10 @@ export class Entity {
         case EK_MANAGER:
         case EK_ELLIOT:
         case EK_TREY:
+        case EK_DARRYL:
           this.selectImageCharacter(unit)
           break
-        case EK_OBJECTIVE:
+        case EK_TARGET:
           cycleImageHere = true
           min = 0
           max = 6
@@ -596,7 +613,7 @@ export class Entity {
 
   selectImageCharacter (unit) {
     let imageSet = 0
-    if (unit.kind == EK_OBJECTIVE) {
+    if (unit.kind == EK_TARGET) {
       return
     }
 
@@ -617,7 +634,7 @@ export class Entity {
         imageSet = 0
         break
     }
-    if (unit.kind == EK_OBJECTIVE) {
+    if (unit.kind == EK_TARGET) {
       debugger
     }
 
@@ -644,7 +661,10 @@ export class Entity {
 
   update () {
     Entity.currentLevel = this.game.level
+
     let changeFrame = this.changeFramePacer()
+    this.changeDirectionTick = this.changeDirectionWander()
+    this.changeDirectionActive = this.changeDirectionPacer()
     if (Entity.spawner && this.spawnPacer()) {
       let enemies = this.getAmountActiveEnemies()
       if (enemies <= this.currentEnemiesLimit) {

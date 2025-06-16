@@ -5,7 +5,7 @@ const SCORE_FONT = `${SCORE_Y}px sans-serif`
 const SCORE_TEMPLATE = 'Score '
 let score = 0
 let kills = 0
-
+const PRESS_ACTIVATE_STRING = 'Press e'
 let HEALTHBAR_X = 150
 const HEALTHBAR_Y = 50
 const HEALTHBAR_SHEET_W = 300
@@ -37,10 +37,18 @@ export class Hud {
     this.updateObjectiveTextPacer = new Utils.createTickPacer(500)
     this.objectiveString = ''
 
-    this.objectiveText = this.game.rastertext.addUnit(
+    this.objectiveText = this.game.rastertext.addUnitToIndex(
       200,
       10,
+      0,
+
       this.objectiveStringTemplate
+    )
+    this.interactText = this.game.rastertext.addUnitToIndex(
+      this.game.board.width - 200,
+      this.game.board.height - 20,
+      1,
+      PRESS_ACTIVATE_STRING
     )
   }
 
@@ -148,6 +156,9 @@ export class Hud {
 
   update () {
     this.score = this.game.score
-    this.updateObjectiveTextPacer() && this.updateObjectiveText()
+    if (this.updateObjectiveTextPacer()) {
+      this.updateObjectiveText()
+      this.interactText.active = false
+    }
   }
 }

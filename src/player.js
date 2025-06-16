@@ -153,7 +153,7 @@ export class Player {
     if (keys['a'] === true) left = true
     if (keys['d'] === true) right = true
 
-    if (keys['Shift'] == true) {
+    if (this.game.input.run) {
       this.speed = RUN_SPEED
     } else {
       this.speed = WALK_SPEED

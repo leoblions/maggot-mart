@@ -1,8 +1,11 @@
 import { Game } from './game.js'
 const LOG_CLICK_LOCATION = true
+const RUN_COUNTDOWN_MAX = 100
 export class Input {
   constructor (game) {
     this.game = game
+    this.runCount = 0
+    this.run = false
     //let kda = this.keydownActionClosure()
     //document.addEventListener('keydown', kda)
     // location of canvas to calculate click location
@@ -118,6 +121,13 @@ export class Input {
     this.menuMotion() // menu activation keypresses
 
     this.clicks = []
+
+    if (this.runCount <= 0) {
+      this.run = false
+    } else {
+      this.runCount--
+      this.run = true
+    }
   }
 
   menuMotion () {
@@ -146,6 +156,7 @@ export class Input {
     if (keys['d'] === true) right = true
 
     if (keys['Shift'] == true) {
+      this.runCount = RUN_COUNTDOWN_MAX
     }
     if (keys['f'] == true) {
     }

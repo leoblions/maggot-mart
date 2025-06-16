@@ -2,6 +2,7 @@ import * as Utils from './utils.js'
 import { Tilegrid } from './tilegrid.js'
 
 const MAX_UNITS = 10
+const VERBOSE = true
 
 const CYCLE_FLAGS_PERIOD = 800
 const CLICK_ADD_PACER = 1000
@@ -94,7 +95,7 @@ export class Brain {
       mustCarry: false,
       readyForNextObjective: false,
       readyForNextStage: false,
-      markerPressed: false
+      targetPressed: false
     } // flags to modify behavior of actions, or disable them
     this.objective = {
       category: 0,
@@ -102,7 +103,8 @@ export class Brain {
       incomplete: 0,
       total: 1,
       markerID: -1,
-      markers: 0
+      markers: 0,
+      markerSet: false
     }
     this.warpDestinations = null
     this.stageData = null
@@ -214,20 +216,24 @@ export class Brain {
     throw 'Could not find matching stage item location record'
   }
 
-  setObjectiveText () {
-    let newText = ''
-    if (undefined == this.objective.total) {
-    } else {
-      let category = this.objective.category ?? 0
-      newText =
-        (OBJECTIVE_NAMES[category] ?? '') +
-        ' ' +
-        this.objective.complete +
-        '/' +
-        this.objective.total
-    }
+  setObjectiveText (overrideText = null) {
+    if (overrideText == null) {
+      let newText = ''
+      if (undefined == this.objective.total) {
+      } else {
+        let category = this.objective.category ?? 0
+        newText =
+          (OBJECTIVE_NAMES[category] ?? '') +
+          ' ' +
+          this.objective.complete +
+          '/' +
+          this.objective.total
+      }
 
-    this.game.hud.objectiveText.updateText(newText)
+      this.game.hud.objectiveText.updateText(newText)
+    } else {
+      this.game.hud.objectiveText.updateText(overrideText)
+    }
   }
 
   setObjectiveTextIntermission (newText) {
@@ -256,10 +262,12 @@ export class Brain {
     console.log('Pickup item category ' + category)
   }
 
-  incrementObjectiveCounter () {
+  incrementObjectiveCounter (updateText = true) {
     this.objective.complete += 1
     this.objective.incomplete -= 1
-    this.setObjectiveText()
+    if (updateText) {
+      this.setObjectiveText()
+    }
   }
 
   collectItemCategoryAction (itemCategory) {
@@ -270,12 +278,12 @@ export class Brain {
   }
 
   // spawnNextObjective () {
-  //   this.game.entity.placeObjectiveMarker(5, 5, 0)
+  //   this.game.entity.placeTarget(5, 5, 0)
   // }
 
   activateObjectiveMarker () {
     // player pressed on the objective marker(red box with arrow)
-    this.bflags.markerPressed = true
+    this.bflags.targetPressed = true
   }
 
   enqueueAction (actionID) {
@@ -297,7 +305,9 @@ export class Brain {
       // unpack row array with spread operator
       //let action = new Action(...matchingObj)
       this.queuedActions.push(matchingObj)
-      console.log('enqueued action ' + actionID)
+      if (VERBOSE) {
+        console.log('brain: enqueued action ' + actionID)
+      }
     }
   }
 
@@ -458,12 +468,12 @@ export class Brain {
     if (
       this.bflags.mustCarry &&
       this.bflags.carry &&
-      this.bflags.markerPressed
+      this.bflags.targetPressed
     ) {
       this.incrementObjectiveCounter()
       this.bflags.readyForNextObjective = true
       this.bflags.carry = false
-      this.bflags.markerPressed = false
+      this.bflags.targetPressed = false
     }
 
     // have needed objectives been reached?
@@ -486,14 +496,14 @@ export class Brain {
       this.game.pickup.addObjectiveUnit(this.objective.category)
       this.bflags.readyForNextObjective = false
       console.log('placed box 1')
-      this.bflags.markerPressed = false
+      this.bflags.targetPressed = false
       this.bflags.carry = false
     }
 
     // player is carrying and objective marker is not set, set OM
     if (this.bflags.carry && !this.game.entity.objectiveMarkerIsSet()) {
       let markerObj = this.getMarkerObjectFromID(this.objective.markerID)
-      this.game.entity.placeObjectiveMarker(
+      this.game.entity.placeTarget(
         markerObj.gridX,
         markerObj.gridY,
         markerObj.level
@@ -534,11 +544,11 @@ export class Brain {
       this.incrementObjectiveCounter()
       this.bflags.readyForNextObjective = true
       this.bflags.carry = false
-      this.bflags.markerPressed = false
+      this.bflags.targetPressed = false
     }
 
     // player touched marker
-    if (this.bflags.markerPressed) {
+    if (this.bflags.targetPressed) {
       this.objective.markerSet = false
       this.advanceStageOnObjectiveCount = true
       this.bflags.readyForNextStage = true
@@ -556,6 +566,11 @@ export class Brain {
         location.level,
         this.objective.category
       )
+
+      this.bflags.readyForNextObjective = false
+      console.log('(1)placed obj item ' + this.objective.category)
+      this.bflags.targetPressed = false
+      this.bflags.carry = false
     }
 
     // player collected enough OI, set OM
@@ -565,20 +580,11 @@ export class Brain {
     ) {
       let markerObj = this.getMarkerObjectFromID(this.objective.markerID)
       this.objective.markerSet = true
-      this.game.entity.placeObjectiveMarker(
+      this.game.entity.placeTarget(
         markerObj.gridX,
         markerObj.gridY,
         markerObj.level
       )
-    }
-
-    // if player got OI and touched OM but does not have enough objectives
-    if (this.bflags.readyForNextObjective && !this.bflags.readyForNextStage) {
-      this.game.pickup.addObjectiveUnit(this.objective.category)
-      this.bflags.readyForNextObjective = false
-      console.log('(1)placed obj item ' + this.objective.category)
-      this.bflags.markerPressed = false
-      this.bflags.carry = false
     }
 
     // player is not carrying and OI not set
@@ -600,6 +606,49 @@ export class Brain {
     }
   }
 
+  multipleMarkerMission () {
+    let targetIsActive = this.game.entity.targetIsSet()
+    debugger
+    if (this.objective.complete == 0 && !this.bflags.targetPressed) {
+      this.bflags.readyForNextObjective = true
+    }
+
+    if (this.bflags.targetPressed == true) {
+      // spawn new target
+      this.incrementObjectiveCounter(false)
+      this.setObjectiveText('Empty trash cans')
+      this.bflags.readyForNextObjective = true
+      this.bflags.carry = false
+      this.bflags.targetPressed = false
+    } else {
+      this.setObjectiveText('Empty trash cans')
+    }
+
+    // have needed objectives been reached?
+    if (this.objective.complete >= this.objective.total) {
+      this.bflags.readyForNextStage = true
+      this.bflags.readyForNextObjective = false
+    } else {
+    }
+
+    if (this.bflags.readyForNextObjective && !targetIsActive) {
+      this.bflags.readyForNextObjective = false
+      let location = this.getNextItemLocation()
+
+      this.objective.markerSet = true
+      this.game.entity.placeTarget(
+        location.gridX,
+        location.gridY,
+        location.level
+      )
+
+      this.bflags.readyForNextObjective = false
+      console.log('(1)placed obj item ' + this.objective.category)
+      this.bflags.targetPressed = false
+      this.bflags.carry = false
+    }
+  }
+
   gatherMission () {
     // if player is carrying remove item and increment counter
 
@@ -607,7 +656,7 @@ export class Brain {
       this.incrementObjectiveCounter()
       this.bflags.readyForNextObjective = true
       this.bflags.carry = false
-      this.bflags.markerPressed = false
+      this.bflags.targetPressed = false
     }
 
     // have needed objectives been reached?
@@ -624,13 +673,10 @@ export class Brain {
         location.level,
         this.objective.category
       )
-    }
-    // if player got OI and touched OM but does not have enough objectives
-    if (this.bflags.readyForNextObjective && !this.bflags.readyForNextStage) {
-      this.game.pickup.addObjectiveUnit(this.objective.category)
+
       this.bflags.readyForNextObjective = false
       console.log('(1)placed obj item ' + this.objective.category)
-      this.bflags.markerPressed = false
+      this.bflags.targetPressed = false
       this.bflags.carry = false
     }
 
@@ -716,29 +762,21 @@ export class Brain {
         this.setObjectiveTextIntermission(INTERMISSION_0)
         this.intermissionSpecialActions()
         break
-      default:
-        break
-    }
-  }
 
-  getManagerDialogChain () {
-    let chainID = 0
-    switch (this.stage) {
-      case 0:
-      case 1:
-        chainID = 0
-        break
-      case 2:
-        chainID = 2
-        break
-      case 4:
-        chainID = 3
+      case 7:
+        if (this.bflags.targetPressed) {
+          switch (this.objective.complete) {
+            case 0:
+              let chainID = 7
+              this.game.dialog.startDialogChain(chainID)
+              break
+          }
+        }
+        this.multipleMarkerMission()
         break
       default:
-        chainID = 0
+        break
     }
-    //console.log('selected manager dialog chain ' + chainID)
-    return chainID
   }
 
   getActorDialogChain (actorID) {
@@ -763,6 +801,9 @@ export class Brain {
   }
 
   dialogInvokeAction (actionID) {
+    /**
+     * talking to boss and certain characters will advance the stage or other things
+     */
     switch (actionID) {
       case 0:
         //collect boxes, stock shelves
@@ -788,6 +829,17 @@ export class Brain {
         if (this.stage != 5) {
           this.stage = 5
           this.setStageData(5)
+        }
+
+        break
+
+      case 3:
+        // categories: 0 box, 1 spray, 2 key, 3 trap 4 carts  5 hives
+        //collect mouse traps
+        if (this.stage != 7) {
+          this.stage = 7
+          this.bflags.targetPressed = false
+          this.setStageData(7)
         }
 
         break

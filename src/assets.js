@@ -2,11 +2,17 @@ import * as Utils from './utils.js'
 import * as Imageutils from './imageutils.js'
 
 // GUI
-export var fontBig, fontSmall, menuBtnImg, shinyButtons, titleImg, dialogImg
+export var fontBig,
+  fontSmall,
+  menuBtnImg,
+  shinyButtons,
+  titleImg,
+  dialogImg,
+  decorImg
 // ENTITY
 export var bugsA, managerImg
 // SPECAL ENTITY
-export var elliotImg, claireImg, treyImg
+export var elliotImg, claireImg, treyImg, darrylImg
 
 // WORLD OBJECT
 export var markerImg
@@ -30,6 +36,8 @@ export function loadAssetsWG (callbackFn) {
 }
 
 export async function loadAssets (callbackFn) {
+  decorImg = await initDecorImages()
+
   {
     let fontBigsrc = './images/tecBig.png'
     let fontBigpromise = getImageData(fontBigsrc)
@@ -69,21 +77,24 @@ export async function loadAssets (callbackFn) {
       200
     )
 
-    let treySrc = './images/trey2.png'
-    let treySheet = await getImageData(treySrc)
-    let treyImgA = await Imageutils.cutSpriteSheetAsync(
-      treySheet,
-      4,
-      4,
-      100,
-      200
-    )
-    treyImgA = treyImgA.slice(0, 12)
-    let treyImgB = await Imageutils.flipImageArrayHorizontalAsync(
-      treyImgA.slice(8, 12)
-    )
+    // let treySrc = './images/trey2.png'
+    // let treySheet = await getImageData(treySrc)
+    // let treyImgA = await Imageutils.cutSpriteSheetAsync(
+    //   treySheet,
+    //   4,
+    //   4,
+    //   100,
+    //   200
+    // )
+    // treyImgA = treyImgA.slice(0, 12)
+    // let treyImgB = await Imageutils.flipImageArrayHorizontalAsync(
+    //   treyImgA.slice(8, 12)
+    // )
 
-    treyImg = treyImgA.concat(treyImgB)
+    treyImg = await characterImagesUDL100x200('./images/trey2.png')
+    darrylImg = await characterImagesUDL100x200('./images/darryl2.png')
+
+    // treyImg = treyImgA.concat(treyImgB)
 
     let markerSrc = './images/marker.png'
     let markerSheet = await getImageData(markerSrc)
@@ -147,4 +158,73 @@ async function getImageData (imageURL) {
 
     sheet.src = imageURL
   })
+}
+
+async function characterImagesUDL100x200 (imageURL) {
+  let spriteSheet = await getImageData(imageURL)
+  let spriteArrayA = await Imageutils.cutSpriteSheetAsync(
+    spriteSheet,
+    4,
+    4,
+    100,
+    200
+  )
+  let spriteArrayUDL = spriteArrayA.slice(0, 12)
+  let spriteArrayR = await Imageutils.flipImageArrayHorizontalAsync(
+    spriteArrayUDL.slice(8, 12)
+  )
+
+  let returnArray = spriteArrayUDL.concat(spriteArrayR)
+  return returnArray
+}
+
+async function initDecorImages () {
+  const width = 100
+  const height = 100
+  const rows = 4
+  const cols = 4
+
+  // load images
+
+  let sheet1 = new Image()
+  let sheet2 = new Image()
+  let sheet1src = '/images/decor.png'
+  let sheet2src = '/images/decor2.png'
+  let sheet1p = new Promise((resolve, reject) => {
+    sheet1.src = sheet1src
+    sheet1.onload = () => {
+      resolve(sheet1)
+    }
+    sheet1.onerror = () => {
+      reject()
+    }
+  })
+  let sheet2p = new Promise((resolve, reject) => {
+    sheet2.src = sheet2src
+    sheet2.onload = () => {
+      resolve(sheet2)
+    }
+    sheet2.onerror = () => {
+      reject()
+    }
+  })
+  let imageArrayOutput = !null
+  let imageArr1 = null
+  let imageArr2 = null
+
+  // await sheet1p.then(value => {
+  //   imageArr1 = Utils.cutSpriteSheet(value, cols, rows, width, height)
+  // })
+
+  // await sheet2p.then(value => {
+  //   imageArr2 = Utils.cutSpriteSheet(value, cols, rows, width, height)
+  // })
+
+  await Promise.all([sheet1p, sheet2p]).then(values => {
+    imageArr1 = Utils.cutSpriteSheet(values[0], cols, rows, width, height)
+    imageArr2 = Utils.cutSpriteSheet(values[1], cols, rows, width, height)
+  })
+
+  imageArrayOutput = imageArr1.concat(imageArr2)
+  return imageArrayOutput
 }

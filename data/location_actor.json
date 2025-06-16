@@ -14,13 +14,25 @@
   {
     "locationID": 2,
     "level": 0,
-    "gridX": 8,
+    "gridX": 9,
     "gridY": 8
   },
   {
     "locationID": 3,
     "level": 1,
-    "gridX": 12,
-    "gridY": 8
+    "gridX": 14,
+    "gridY": 7
+  },
+  {
+    "locationID": 4,
+    "level": 0,
+    "gridX": 14,
+    "gridY": 17
+  },
+  {
+    "locationID": 5,
+    "level": 0,
+    "gridX": 14,
+    "gridY": 4
   }
 ]

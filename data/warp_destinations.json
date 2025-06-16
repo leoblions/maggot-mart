@@ -26,5 +26,19 @@
     "gridY": 2,
     "level": 1,
     "desc": "back area top"
+  },
+  {
+    "destID": 4,
+    "gridX": 13,
+    "gridY": 12,
+    "level": 3,
+    "desc": "basement enterance"
+  },
+  {
+    "destID": 5,
+    "gridX": 13,
+    "gridY": 8,
+    "level": 1,
+    "desc": "basement exit"
   }
 ]
