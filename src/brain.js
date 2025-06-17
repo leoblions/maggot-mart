@@ -608,7 +608,7 @@ export class Brain {
 
   multipleMarkerMission () {
     let targetIsActive = this.game.entity.targetIsSet()
-    debugger
+
     if (this.objective.complete == 0 && !this.bflags.targetPressed) {
       this.bflags.readyForNextObjective = true
     }
@@ -634,6 +634,7 @@ export class Brain {
     if (this.bflags.readyForNextObjective && !targetIsActive) {
       this.bflags.readyForNextObjective = false
       let location = this.getNextItemLocation()
+      debugger
 
       this.objective.markerSet = true
       this.game.entity.placeTarget(
@@ -764,10 +765,16 @@ export class Brain {
         break
 
       case 7:
+        let chainID = -1
         if (this.bflags.targetPressed) {
           switch (this.objective.complete) {
             case 0:
-              let chainID = 7
+              chainID = 7
+              this.game.dialog.startDialogChain(chainID)
+              break
+
+            case 1:
+              chainID = 9
               this.game.dialog.startDialogChain(chainID)
               break
           }

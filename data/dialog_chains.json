@@ -168,5 +168,19 @@
       "Ka klunk!",
       "Hey! Don't lock me in here!"
     ]
+  },
+  {
+    "chainID": 9,
+    "actionID": -1,
+    "speaker": [
+      "Jess",
+      "Jess",
+      "Jess"
+    ],
+    "line": [
+      "Huuu! Ugh! It won't budge",
+      "Hey! Someonne let me out!!!",
+      "Maybe there's a key down here or another way"
+    ]
   }
 ]
