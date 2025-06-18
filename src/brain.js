@@ -13,6 +13,7 @@ const LEVEL_DATA_SUFFIX = '.txt'
 const LOAD_DEFAULT_LEVEL = false
 const DEFAULT_ITEM_SPAWN_STAGE = 0
 const BOSS_OFFICE_POSITION = 3
+const TILE_DOOR = 23
 
 const INTERMISSION_0 = 'talk to boss'
 const INTERMISSION_1 = 'talk to elliot'
@@ -198,6 +199,25 @@ export class Brain {
       }
     }
 
+    let desiredRecord = this.getLocationsFromStageID(this.stage)
+    if (desiredRecord != null) {
+      let locations = desiredRecord.locations
+      let location = locations[this.currentItemIndex]
+      return location
+    } else {
+      desiredRecord = this.getLocationsFromStageID(DEFAULT_ITEM_SPAWN_STAGE)
+      if (null == desiredRecord) {
+        throw 'Could not find matching stage item location record'
+      }
+      let locations = desiredRecord.locations
+      let location = locations[this.currentItemIndex]
+      return location
+    }
+
+    throw 'Could not find matching stage item location record'
+  }
+
+  getCurrentItemLocation () {
     let desiredRecord = this.getLocationsFromStageID(this.stage)
     if (desiredRecord != null) {
       let locations = desiredRecord.locations
@@ -428,6 +448,7 @@ export class Brain {
       if (this.objective.complete == this.objective.total) {
         this.objective.complete = 0
         this.objective.total = 1
+        this.currentItemIndex = 0
       }
     }
   }
@@ -501,7 +522,7 @@ export class Brain {
     }
 
     // player is carrying and objective marker is not set, set OM
-    if (this.bflags.carry && !this.game.entity.objectiveMarkerIsSet()) {
+    if (this.bflags.carry && !this.game.entity.targetIsSet()) {
       let markerObj = this.getMarkerObjectFromID(this.objective.markerID)
       this.game.entity.placeTarget(
         markerObj.gridX,
@@ -539,6 +560,8 @@ export class Brain {
   }
 
   gatherThenDepositMission () {
+    debugger
+    let OIactive = this.game.pickup.isObjectiveItemActive()
     // player picked up OI, and less than amount needed
     if (this.bflags.carry && this.objective.complete < this.objective.total) {
       this.incrementObjectiveCounter()
@@ -560,17 +583,19 @@ export class Brain {
 
     if (this.bflags.readyForNextObjective) {
       let location = this.getNextItemLocation()
-      this.game.pickup.addObjectiveUnitXYLC(
-        location.gridX,
-        location.gridY,
-        location.level,
-        this.objective.category
-      )
+      if (location != undefined) {
+        this.game.pickup.addObjectiveUnitXYLC(
+          location.gridX,
+          location.gridY,
+          location.level,
+          this.objective.category
+        )
 
-      this.bflags.readyForNextObjective = false
-      console.log('(1)placed obj item ' + this.objective.category)
-      this.bflags.targetPressed = false
-      this.bflags.carry = false
+        this.bflags.readyForNextObjective = false
+        console.log('(1)placed obj item ' + this.objective.category)
+        this.bflags.targetPressed = false
+        this.bflags.carry = false
+      }
     }
 
     // player collected enough OI, set OM
@@ -588,12 +613,9 @@ export class Brain {
     }
 
     // player is not carrying and OI not set
-    if (!this.bflags.carry && !this.game.pickup.isObjectiveItemActive()) {
+    if (!this.bflags.carry && this.objective.complete == 0 && !OIactive) {
       this.placeObjectiveItem()
-    }
-
-    // place OI
-    if (this.bflags.carry && !this.game.pickup.isObjectiveItemActive()) {
+    } else if (this.bflags.carry && !OIactive) {
       // only do si if pickup is in current level
       if (!this.game.pickup.objectiveItemExists()) {
         this.bflags.readyForNextObjective = false
@@ -607,14 +629,27 @@ export class Brain {
   }
 
   multipleMarkerMission () {
+    debugger
     let targetIsActive = this.game.entity.targetIsSet()
+    let targetInRoom = this.game.entity.targetInCurrentRoom()
+    let targetExist = !(this.game.entity.getTarget() == undefined)
+    //let currentItemLoc = this.getCurrentItemLocation()
 
-    if (this.objective.complete == 0 && !this.bflags.targetPressed) {
+    if (
+      this.objective.complete == 0 &&
+      !this.bflags.targetPressed &&
+      this.objective.markerSet == false
+    ) {
       this.bflags.readyForNextObjective = true
+    }
+
+    if (targetInRoom && this.objective.markerSet && targetExist) {
+      this.game.entity.activateTarget()
     }
 
     if (this.bflags.targetPressed == true) {
       // spawn new target
+      this.objective.markerSet = false
       this.incrementObjectiveCounter(false)
       this.setObjectiveText('Empty trash cans')
       this.bflags.readyForNextObjective = true
@@ -631,22 +666,27 @@ export class Brain {
     } else {
     }
 
-    if (this.bflags.readyForNextObjective && !targetIsActive) {
+    if (
+      this.bflags.readyForNextObjective &&
+      (!targetIsActive || !targetExist)
+    ) {
       this.bflags.readyForNextObjective = false
       let location = this.getNextItemLocation()
-      debugger
+      if (location != undefined) {
+        this.objective.markerSet = true
+        this.game.entity.placeTarget(
+          location.gridX,
+          location.gridY,
+          location.level
+        )
 
-      this.objective.markerSet = true
-      this.game.entity.placeTarget(
-        location.gridX,
-        location.gridY,
-        location.level
-      )
-
-      this.bflags.readyForNextObjective = false
-      console.log('(1)placed obj item ' + this.objective.category)
-      this.bflags.targetPressed = false
-      this.bflags.carry = false
+        this.bflags.readyForNextObjective = false
+        console.log('(1)placed obj item ' + this.objective.category)
+        this.bflags.targetPressed = false
+        this.bflags.carry = false
+      }
+    } else if (!this.bflags.readyForNextObjective && targetInRoom) {
+      this.game.entity.activateTarget()
     }
   }
 
@@ -716,6 +756,7 @@ export class Brain {
     return null
   }
   placeObjectiveItem () {
+    //console.log('POP')
     let locationsPossible = this.getLocationsFromStageID(this.stage).locations
       .length
 
@@ -724,12 +765,14 @@ export class Brain {
       location = this.getNextItemLocation()
     }
     this.lastLocation = location
-    this.game.pickup.addObjectiveUnitXYLC(
-      location.gridX,
-      location.gridY,
-      location.level,
-      Number(this.objective.category)
-    )
+    if (location != undefined) {
+      this.game.pickup.addObjectiveUnitXYLC(
+        location.gridX,
+        location.gridY,
+        location.level,
+        Number(this.objective.category)
+      )
+    }
   }
   stageSpecificChanges () {
     // only this should call things based on bflags
@@ -776,6 +819,8 @@ export class Brain {
             case 1:
               chainID = 9
               this.game.dialog.startDialogChain(chainID)
+
+              this.game.tilegrid.setTile(13, 11, TILE_DOOR)
               break
           }
         }

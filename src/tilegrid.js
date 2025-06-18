@@ -15,8 +15,6 @@ const LEVEL_DATA_SUFFIX = '.txt'
 const LOAD_DEFAULT_LEVEL = false
 const TILE_TYPE_AMOUNT = 48
 
-
-
 export class Tilegrid {
   static grid = null
   static tileSize
@@ -62,14 +60,12 @@ export class Tilegrid {
     this.adjustBounds()
   }
 
-  resetGrid(){
+  resetGrid () {
     let newArray = []
-    for(let y = 0; y< tilesY;y++){
+    for (let y = 0; y < tilesY; y++) {
       let currentRow = []
-      for(let x=0;x<tilesX;x++)
-      {
+      for (let x = 0; x < tilesX; x++) {
         currentRow.push(DEFAULT_GROUND)
-
       }
       newArray.push(currentRow)
     }
@@ -153,7 +149,7 @@ export class Tilegrid {
   initImages () {
     let sheet = new Image()
     let len = 0
-    sheet.src = '/images/floorTile1.png'
+    sheet.src = '/images/tileFloor.png'
     sheet = sheet
     let images1 = null
     sheet.onload = () => {
@@ -169,7 +165,7 @@ export class Tilegrid {
 
     let sheet2 = new Image()
     let images2 = []
-    sheet2.src = '/images/wallTile.png'
+    sheet2.src = '/images/tileWall.png'
 
     sheet2.onload = () => {
       images2 = Utils.cutSpriteSheet(sheet2, 4, 4, 100, 100)
@@ -182,7 +178,7 @@ export class Tilegrid {
 
     let sheet3 = new Image()
     let images3 = []
-    sheet3.src = '/images/shelfTile.png'
+    sheet3.src = '/images/tileShelf.png'
 
     sheet3.onload = () => {
       images3 = Utils.cutSpriteSheet(sheet3, 4, 4, 100, 100)
@@ -220,6 +216,19 @@ export class Tilegrid {
     this.game.cameraY = Math.floor(
       this.game.player.worldY - this.game.board.height / 2
     )
+  }
+
+  setTile (gridX, gridY, kind) {
+    // does not persist across level changes
+    debugger
+
+    if (
+      kind < this.images.length &&
+      gridX < Tilegrid.grid[0].length &&
+      gridY < Tilegrid.grid.length
+    ) {
+      Tilegrid.grid[gridY][gridX] = kind
+    }
   }
 
   draw () {

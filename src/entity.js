@@ -33,7 +33,7 @@ const EK_TREY = 10
 const EK_DARRYL = 11
 const EK_TARGET = 20
 const DEFAULT_ENEMIES_LIMIT = 3
-const OBJ_MARKER_ARRAY_INDEX = 4
+const TARGET_MARKER_ARRAY_INDEX = 4
 /*
 Entity kinds
 0-7 enemy
@@ -220,31 +220,6 @@ export class Entity {
     throw 'No matching locationID found ' + locationID
   }
 
-  // async initImagesO () {
-  //   if (this.ready) {
-  //     return
-  //   }
-  //   let sheet = new Image()
-  //   sheet.src = './images/bugsheet0.png'
-  //   sheet.onload = () => {
-  //     Utils.cutSpriteSheetCallback(sheet, 4, 4, 150, 150, output => {
-  //       //debugger
-  //       this.imagesL = output
-  //       this.imagesR = Utils.applyFunctionToImageArray(output, Utils.flipImageH)
-
-  //       //this.images = this.imagesL.concat(this.imagesR)
-  //       Entity.imagesLoaded = true
-  //     })
-  //     // this.imagesR = Utils.applyFunctionToImageArray(
-  //     //   this.imagesL,
-  //     //   Utils.flipImageH
-  //     // )
-
-  //     console.log('enemy images loaded')
-  //     this.ready = true
-  //   }
-  // }
-
   spawnUnit () {
     let kind = Math.floor(Math.random() * MAX_KIND)
     let worldX = SPAWN_X
@@ -304,7 +279,7 @@ export class Entity {
   }
 
   placeTarget (gridX, gridY, level) {
-    let index = OBJ_MARKER_ARRAY_INDEX
+    let index = TARGET_MARKER_ARRAY_INDEX
     let kind = EK_TARGET
 
     this.units[index] = this.createUnitGridLoc(gridX, gridY, kind, level)
@@ -314,13 +289,29 @@ export class Entity {
     }
     console.log('added objective marker ' + level)
   }
+  activateTarget () {
+    let marker = this.units[TARGET_MARKER_ARRAY_INDEX]
+
+    marker.active = true
+  }
   targetIsSet () {
-    let marker = this.units[OBJ_MARKER_ARRAY_INDEX]
+    let marker = this.units[TARGET_MARKER_ARRAY_INDEX]
     if (marker != null && (marker.active || marker.level != this.game.level)) {
       return true
     } else {
       return false
     }
+  }
+  targetInCurrentRoom () {
+    let marker = this.units[TARGET_MARKER_ARRAY_INDEX]
+    if (marker != null && marker.level == this.game.level) {
+      return true
+    } else {
+      return false
+    }
+  }
+  getTarget () {
+    return this.units[TARGET_MARKER_ARRAY_INDEX]
   }
   createUnitGridLoc (gridX, gridY, kind, level = 0) {
     let worldX = Math.round(gridX * this.game.tileSize)

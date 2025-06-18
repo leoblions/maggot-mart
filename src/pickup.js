@@ -346,7 +346,10 @@ export class Pickup {
 
   isObjectiveItemActive () {
     let currentObjItem = this.units[OBJECTIVE_ITEM_SLOT]
-    if (currentObjItem == undefined || currentObjItem?.active == false) {
+    if (
+      currentObjItem == undefined ||
+      (currentObjItem?.active ?? false) == false
+    ) {
       if (currentObjItem?.objective ?? false) {
         return true
       }
