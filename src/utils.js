@@ -732,3 +732,11 @@ export function stringSplitter (origString, targetlength) {
   }
   return lines
 }
+
+export function randRange2 (min, max) {
+  let difference = max - min
+  let randnum = Math.random()
+  let scaledRandnum = Math.round(randnum * difference)
+  let shiftedUp = scaledRandnum + min
+  return shiftedUp
+}

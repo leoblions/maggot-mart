@@ -35,17 +35,16 @@ const KEY_KIND_MAX_INDEX = 61
 const RANDLOC_MAX = 3
 
 class Unit {
-  constructor (worldX, worldY, kind) {
-    this.kind = kind // 0 up / 1 down / 2 left / 3 right
+  constructor (worldX, worldY, kind, imageID = -1) {
+    this.kind = kind // 0 food, 1 box, 2 spray, 3 trap, 4 key
     this.worldX = worldX
     this.worldY = worldY
     this.active = true
     this.visible = true // false if off screen
     this.frame = 0
     this.level = 0
-    this.frameMin = 0
-    this.frameMax = 0
-
+    this.image = null // reference to image object to use as sprite
+    this.image = this.selectImage()
     this.velX = 0
     this.velY = 0
   }
@@ -54,10 +53,55 @@ class Unit {
     let dY = Math.abs(this.worldY - Pickup.sgame.player.worldY)
     return dX < range && dY < range
   }
+  selectImage () {
+    let min = 0
+    let max, index, image, collection
+    debugger
+    switch (this.kind) {
+      case 0:
+        //food
+        collection = Pickup.imagesProduce
+        break
+      case 1:
+        //box
+        collection = Pickup.imagesBox
+        break
+      case 2:
+        //spray
+        collection = Pickup.imagesCan
+        break
+      case 3:
+        //spray
+        collection = Pickup.imagesTrap
+        break
+      case 4:
+        //spray
+        collection = Pickup.imagesKey
+        break
+      default:
+        console.error('invalid kind ' + kind)
+        return null
+    }
+
+    max = collection.length
+    index = Utils.randRange(min, max)
+    image = collection[index]
+    return image
+  }
 }
 
 export class Pickup {
   static sgame = null
+  static {
+    // static, so that Units may use these without reference to tilegrid instance
+    this.images = null //don't use. assign images from other special arrays
+    this.imagesTrap = null
+    this.imagesBox = null
+    this.imagesProduce = null
+    this.imagesCan = null
+    this.imagesKey = null
+    this.imagesInitialized = false
+  }
   constructor (game) {
     this.objectiveCategory = 0 // 0 box, 1 spray, 2 key, 3 trap
     this.addObjectiveItemEnabled = false
@@ -68,7 +112,8 @@ export class Pickup {
     this.game = game
     this.objective = false
     Pickup.sgame = game
-    this.images = null
+    //images
+
     this.units = new Array(MAX_UNITS)
     this.randomPlacePacer = Utils.createMillisecondPacer(PICKUP_RATE)
     this.updateCullPacer = Utils.createMillisecondPacer(UPDATE_CULL_PERIOD)
@@ -88,19 +133,48 @@ export class Pickup {
     this.spawndata = await response.json()
   }
 
-  async initImages0 () {
-    let sheet = new Image()
-    sheet.src = './images/produce.png'
-    sheet.onload = () => {
-      this.ready = true
-      let images, imagesD, imagesL, imagesR
-      //promises
-      Utils.cutSpriteSheetCallback(sheet, 6, 6, 100, 100, output => {
-        this.images = output
-
-        console.log('pickup images loaded')
+  async getImagesFromURL (URL, cols, rows, width, height) {
+    async function imageLoadPF (URL) {
+      let imageLoadP = new Promise((resolve, reject) => {
+        let sheet = new Image()
+        sheet.src = URL
+        sheet.onload = () => {
+          console.error('load image good')
+          resolve(sheet)
+        }
+        sheet.onerror = () => {
+          console.error('load image failed')
+          reject(sheet)
+        }
       })
+      let image = await imageLoadP
+      return image
     }
+    async function imageCutPF (image, cols, rows, width, height) {
+      let imageCutP = new Promise((resolve, reject) => {
+        Utils.cutSpriteSheetCallback(
+          image,
+          cols,
+          rows,
+          width,
+          height,
+          output => {
+            if (output == undefined) {
+              reject(output)
+            } else {
+              resolve(output)
+            }
+
+            console.log('pickup images loaded')
+          }
+        )
+      })
+      let imageArray = await imageCutP
+      return imageArray
+    }
+    let sheet = await imageLoadPF(URL)
+    let arr = await imageCutPF(sheet, cols, rows, width, height)
+    return arr
   }
 
   objectiveItemActive () {
@@ -120,52 +194,41 @@ export class Pickup {
     this.units[OBJECTIVE_ITEM_SLOT] = null
   }
 
-  initImages () {
-    this.images = new Array(32)
-    let sheet = new Image()
-    let len = 0
-    sheet.src = '/images/produce.png'
-    sheet = sheet
-    let images1 = null
-    sheet.onload = () => {
-      // 0-35 fruit
-      images1 = Utils.cutSpriteSheet(sheet, 6, 6, 100, 100)
-      for (let i = 0; i < 0 + images1.length; i++) {
-        this.images[i + 0] = images1[i]
-      }
+  async initImages () {
+    Pickup.images = new Array(32)
+    if (Pickup.imagesInitialized) {
+      console.log('Images already initialized')
+      return
     }
 
-    let sheet2 = new Image()
-    let images2 = []
-    sheet2.src = '/images/boxescans.png'
+    Pickup.imagesProduce = await this.getImagesFromURL(
+      '/images/produce.png',
+      6,
+      6,
+      100,
+      100
+    )
+    let boxesAndCans = await this.getImagesFromURL(
+      '/images/boxescans.png',
+      4,
+      4,
+      100,
+      100
+    )
+    Pickup.imagesBox = boxesAndCans.slice(0, 9)
+    Pickup.imagesCan = boxesAndCans.slice(10, 14)
+    Pickup.imagesTrap = boxesAndCans.slice(15, 16)
 
-    sheet2.onload = () => {
-      // 36 - 45 boxes
-      // 46 - 50 spraycans
-      // 51 mousetrap
+    let keyImages = await this.getImagesFromURL(
+      '/images/keys.png',
+      4,
+      4,
+      100,
+      100
+    )
+    Pickup.imagesKey = keyImages.slice(0, 9)
 
-      images2 = Utils.cutSpriteSheet(sheet2, 4, 4, 100, 100)
-      for (let i = 0; i < images2.length; i++) {
-        images2[i].solid = true
-
-        this.images[i + BOX_KIND_MIN_INDEX] = images2[i]
-      }
-    }
-
-    let sheet3 = new Image()
-    let images3 = []
-    sheet3.src = '/images/keys.png'
-
-    sheet3.onload = () => {
-      // 52 - 61 boxes
-
-      images3 = Utils.cutSpriteSheet(sheet3, 4, 4, 100, 100)
-      for (let i = 0; i < images3.length; i++) {
-        images3[i].solid = true
-
-        this.images[i + KEY_KIND_MIN_INDEX] = images3[i]
-      }
-    }
+    Pickup.imagesInitialized = true
   }
 
   updateDisplayUnits () {
@@ -216,15 +279,12 @@ export class Pickup {
   addRandomUnit () {
     let [worldX, worldY] = this.getRandomFloorCell()
 
-    let kind = Math.trunc(Math.random() * MAX_KIND)
-    if (kind >= 36 && kind <= 45) {
-      // dont add boxes as random items
-      kind = 35
-    }
+    let kind = 0
+
     let newUnit
     for (let i = RAND_ITEM_MIN_INDEX; i < MAX_UNITS; i++) {
-      let element = this.units[i]
-      if (!(element instanceof Unit) || !element.active) {
+      let unit = this.units[i]
+      if (!(unit instanceof Unit) || !unit.active) {
         newUnit = new Unit(worldX, worldY, kind)
         newUnit.category = -1
         newUnit.level = this.game.level
@@ -240,11 +300,11 @@ export class Pickup {
     //debugger
     let newUnits = []
     for (let i = 0; i < this.units.length; i++) {
-      let element = this.units[i]
+      let unit = this.units[i]
       if (
-        element instanceof Unit &&
-        element.level == destinationLevel &&
-        element.active
+        unit instanceof Unit &&
+        unit.level == destinationLevel &&
+        unit.active
       ) {
         newUnits.push(this.units[i])
       }
@@ -257,14 +317,14 @@ export class Pickup {
     // keep objective units
     let newUnits = []
     for (let i = 0; i < this.units.length; i++) {
-      let element = this.units[i]
+      let unit = this.units[i]
       if (
-        element instanceof Unit &&
-        element.level == destinationLevel &&
-        element.active
+        unit instanceof Unit &&
+        unit.level == destinationLevel &&
+        unit.active
       ) {
         newUnits.push(this.units[i])
-      } else if (element instanceof Unit && element.objective) {
+      } else if (unit instanceof Unit && unit.objective) {
         newUnits.push(this.units[i])
       }
     }
@@ -274,8 +334,8 @@ export class Pickup {
   addUnit (worldX, worldY, kind) {
     let newUnit
     for (let i = 0; i < MAX_UNITS; i++) {
-      let element = this.units[i]
-      if (!(element instanceof Unit) || !element.active) {
+      let unit = this.units[i]
+      if (!(unit instanceof Unit) || !unit.active) {
         newUnit = new Unit(worldX, worldY, kind)
         this.units[i] = newUnit
         return newUnit
@@ -310,23 +370,10 @@ export class Pickup {
   }
 
   selectObjectiveItemKindFromCategory (category) {
-    // 0 box, 1 spray, 2 key, 3 trap
-    let kind = 0
-    switch (Number(category)) {
-      case 0:
-        kind = Utils.randRange(BOX_KIND_MIN_INDEX, BOX_KIND_MAX_INDEX)
-        break
-      case 1:
-        kind = Utils.randRange(SPRAY_KIND_MIN_INDEX, SPRAY_KIND_MAX_INDEX)
-        break
-      case 2:
-        kind = Utils.randRange(KEY_KIND_MIN_INDEX, KEY_KIND_MAX_INDEX)
-        break
-      case 3:
-        kind = 51
-        break
-    }
-    return kind
+    // old 0 box, 1 spray, 2 key, 3 trap
+    // 0 food, 1 box, 2 spray, 3 trap, 4 key
+
+    return category
   }
 
   getObjectiveItemLocation () {
@@ -455,19 +502,19 @@ export class Pickup {
 
   draw () {
     //this.game.ctx.drawImage(this.images[0], 0, 0, SPRITE_WIDTH, SPRITE_HEIGHT)
-    for (let element of this.units) {
+    for (let unit of this.units) {
       //console.log('draw unit')
       //debugger
-      if (element instanceof Unit && element.active && element.visible) {
+      if (unit instanceof Unit && unit.active && unit.visible) {
         // debugger
-        let screenX = element.worldX - this.game.cameraX + SPRITE_OFFSET
-        let screenY = element.worldY - this.game.cameraY + SPRITE_OFFSET
-        let image = this.images[element.kind]
+        let screenX = unit.worldX - this.game.cameraX + SPRITE_OFFSET
+        let screenY = unit.worldY - this.game.cameraY + SPRITE_OFFSET
+        //let image = this.images[unit.kind]
         if (image == null) {
           return
         }
         this.game.ctx.drawImage(
-          image,
+          unit.image,
           screenX,
           screenY,
           SPRITE_WIDTH,
@@ -522,22 +569,22 @@ export class Pickup {
       this.addObjectiveUnit()
     }
 
-    for (let element of this.units) {
-      if (element instanceof Unit && element.active) {
-        this.checkUnitHitEntity(element)
-        element.worldX += element.velX
-        element.worldY += element.velY
+    for (let unit of this.units) {
+      if (unit instanceof Unit && unit.active) {
+        this.checkUnitHitEntity(unit)
+        unit.worldX += unit.velX
+        unit.worldY += unit.velY
         if (checkVisible) {
-          element.visible = element.checkRange(CULL_DISTANCE)
-          if (element.level != this.game.level) {
-            element.visible = false
+          unit.visible = unit.checkRange(CULL_DISTANCE)
+          if (unit.level != this.game.level) {
+            unit.visible = false
           } else {
-            element.visible = true
+            unit.visible = true
           }
         }
-        if (checkTouched && element.checkRange(TOUCH_PLAYER_RANGE)) {
-          this.collectItemSpecialActions(element)
-          element.active = false
+        if (checkTouched && unit.checkRange(TOUCH_PLAYER_RANGE)) {
+          this.collectItemSpecialActions(unit)
+          unit.active = false
           this.game.sound.playSoundByName('chime1')
           this.game.score += 1
         }
