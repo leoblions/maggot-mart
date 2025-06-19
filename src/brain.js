@@ -105,7 +105,8 @@ export class Brain {
       total: 1,
       markerID: -1,
       markers: 0,
-      markerSet: false
+      markerSet: false,
+      advanceStage: false
     }
     this.warpDestinations = null
     this.stageData = null
@@ -125,7 +126,7 @@ export class Brain {
     this.setObjectiveText()
   }
 
-  setStageData (stageID) {
+  initStage (stageID) {
     for (const record of this.stageData) {
       if (record.stageID == stageID) {
         this.objective.category = record.category
@@ -138,6 +139,12 @@ export class Brain {
         this.setObjectiveText()
         break
       }
+    }
+    switch (stageID) {
+      case 7:
+        this.objective.touchedCan = false
+        this.objective.foundBags = false
+        this.objective.foundKey = false
     }
   }
 
@@ -437,16 +444,18 @@ export class Brain {
     }
   }
 
-  advanceStageIfObjectivesComplete () {
+  advanceAndInitStage () {
     if (
-      this.objective.complete == this.objective.total &&
-      this.advanceStageOnObjectiveCount
+      this.objective.advanceStage ||
+      (this.objective.complete == this.objective.total &&
+        this.advanceStageOnObjectiveCount)
     ) {
       this.stage += 1
       this.game.pickup.removeObjectiveItem()
-      this.setStageData(this.stage)
+      this.initStage(this.stage)
       if (this.objective.complete == this.objective.total) {
         this.objective.complete = 0
+        this.objective.advanceStage = false
         this.objective.total = 1
         this.currentItemIndex = 0
       }
@@ -459,8 +468,8 @@ export class Brain {
     }
     this.cycleFlagsPacer() && this.dequeueAction()
     //this.game.pickup.addObjectiveItemEnabled = true
-    this.stageSpecificChanges()
-    this.advanceStageIfObjectivesComplete()
+    this.stageRun()
+    this.advanceAndInitStage()
   }
 
   stageSelect () {
@@ -473,7 +482,7 @@ export class Brain {
       let newStage = prompt('Enter stage number: ')
       newStage = Number(newStage)
       this.stage = newStage
-      this.setStageData(newStage)
+      this.initStage(newStage)
       //this.stageSelect = undefined
     }
 
@@ -630,64 +639,6 @@ export class Brain {
 
   multipleMarkerMission () {
     debugger
-    let targetIsActive = this.game.entity.targetIsSet()
-    let targetInRoom = this.game.entity.targetInCurrentRoom()
-    let targetExist = !(this.game.entity.getTarget() == undefined)
-    //let currentItemLoc = this.getCurrentItemLocation()
-
-    if (
-      this.objective.complete == 0 &&
-      !this.bflags.targetPressed &&
-      this.objective.markerSet == false
-    ) {
-      this.bflags.readyForNextObjective = true
-    }
-
-    if (targetInRoom && this.objective.markerSet && targetExist) {
-      this.game.entity.activateTarget()
-    }
-
-    if (this.bflags.targetPressed == true) {
-      // spawn new target
-      this.objective.markerSet = false
-      this.incrementObjectiveCounter(false)
-      this.setObjectiveText('Empty trash cans')
-      this.bflags.readyForNextObjective = true
-      this.bflags.carry = false
-      this.bflags.targetPressed = false
-    } else {
-      this.setObjectiveText('Empty trash cans')
-    }
-
-    // have needed objectives been reached?
-    if (this.objective.complete >= this.objective.total) {
-      this.bflags.readyForNextStage = true
-      this.bflags.readyForNextObjective = false
-    } else {
-    }
-
-    if (
-      this.bflags.readyForNextObjective &&
-      (!targetIsActive || !targetExist)
-    ) {
-      this.bflags.readyForNextObjective = false
-      let location = this.getNextItemLocation()
-      if (location != undefined) {
-        this.objective.markerSet = true
-        this.game.entity.placeTarget(
-          location.gridX,
-          location.gridY,
-          location.level
-        )
-
-        this.bflags.readyForNextObjective = false
-        console.log('(1)placed obj item ' + this.objective.category)
-        this.bflags.targetPressed = false
-        this.bflags.carry = false
-      }
-    } else if (!this.bflags.readyForNextObjective && targetInRoom) {
-      this.game.entity.activateTarget()
-    }
   }
 
   gatherMission () {
@@ -755,6 +706,62 @@ export class Brain {
     }
     return null
   }
+  missionTrashBasement () {
+    let targetIsActive = this.game.entity.targetIsSet()
+    let targetInRoom = this.game.entity.targetInCurrentRoom()
+    let targetExist = !(this.game.entity.getTarget() == undefined)
+    //let currentItemLoc = this.getCurrentItemLocation()
+    // this.objective.touchedCan = false
+    //     this.objective.foundBags = false
+    //     this.objective.foundKey = false
+
+    //create trash can target
+    if (this.objective.touchedCan == false) {
+      if (!targetExist) {
+        this.objective.markerSet = true
+        this.game.entity.placeTarget(17, 3, 0)
+
+        console.log('placed trash can target ')
+        this.setObjectiveText('Empty trash cans')
+        this.bflags.targetPressed = false
+      }
+    }
+
+    if (targetInRoom && this.objective.markerSet && targetExist) {
+      this.game.entity.activateTarget()
+    }
+
+    //player touches a target
+    if (this.bflags.targetPressed == true) {
+      if (this.objective.touchedCan == false) {
+        this.objective.touchedCan = true
+        // bags
+        console.log('placed trash bag target ')
+        this.game.entity.placeTarget(17, 17, 3)
+        this.game.dialog.startDialogChain(7)
+        this.setObjectiveText('Find trash bags')
+      } else if (this.objective.foundBags == false) {
+        this.objective.foundBags = true
+        //place key
+        this.game.dialog.startDialogChain(9)
+
+        this.game.tilegrid.setTile(13, 11, TILE_DOOR) //lock door
+        this.game.entity.placeTarget(3, 5, 3)
+        console.log('placed key target ')
+        this.setObjectiveText('Find key or escape')
+      } else if (this.objective.foundKey == false) {
+        //secret exit
+        this.game.entity.placeTarget(2, 10, 3)
+        console.log('placed exit target ')
+        this.setObjectiveText('Unlock door to exit')
+        this.objective.foundKey = true
+      }
+
+      this.objective.markerSet = true
+
+      this.bflags.targetPressed = false
+    }
+  }
   placeObjectiveItem () {
     //console.log('POP')
     let locationsPossible = this.getLocationsFromStageID(this.stage).locations
@@ -774,7 +781,7 @@ export class Brain {
       )
     }
   }
-  stageSpecificChanges () {
+  stageRun () {
     // only this should call things based on bflags
     // other bflags functions are called externally and modify bflags
     switch (this.stage) {
@@ -808,23 +815,7 @@ export class Brain {
         break
 
       case 7:
-        let chainID = -1
-        if (this.bflags.targetPressed) {
-          switch (this.objective.complete) {
-            case 0:
-              chainID = 7
-              this.game.dialog.startDialogChain(chainID)
-              break
-
-            case 1:
-              chainID = 9
-              this.game.dialog.startDialogChain(chainID)
-
-              this.game.tilegrid.setTile(13, 11, TILE_DOOR)
-              break
-          }
-        }
-        this.multipleMarkerMission()
+        this.missionTrashBasement()
         break
       default:
         break
@@ -862,7 +853,7 @@ export class Brain {
 
         if (this.stage != 1) {
           this.stage = 1
-          this.setStageData(1)
+          this.initStage(1)
         }
 
         break
@@ -871,7 +862,7 @@ export class Brain {
         //collect bug spray cans (stage 3)
         if (this.stage != 3) {
           this.stage = 3
-          this.setStageData(3)
+          this.initStage(3)
         }
 
         break
@@ -880,7 +871,7 @@ export class Brain {
         //collect mouse traps
         if (this.stage != 5) {
           this.stage = 5
-          this.setStageData(5)
+          this.initStage(5)
         }
 
         break
@@ -891,7 +882,7 @@ export class Brain {
         if (this.stage != 7) {
           this.stage = 7
           this.bflags.targetPressed = false
-          this.setStageData(7)
+          this.initStage(7)
         }
 
         break
