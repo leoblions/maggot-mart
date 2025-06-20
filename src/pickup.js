@@ -56,7 +56,7 @@ class Unit {
   selectImage () {
     let min = 0
     let max, index, image, collection
-    debugger
+
     switch (this.kind) {
       case 0:
         //food
@@ -69,10 +69,12 @@ class Unit {
       case 2:
         //spray
         collection = Pickup.imagesCan
+
         break
       case 3:
-        //spray
+        //trap
         collection = Pickup.imagesTrap
+        return collection[0]
         break
       case 4:
         //spray
@@ -288,6 +290,7 @@ export class Pickup {
         newUnit = new Unit(worldX, worldY, kind)
         newUnit.category = -1
         newUnit.level = this.game.level
+        console.log('add unit kind: ' + kind)
 
         this.units[i] = newUnit
         return newUnit
@@ -510,7 +513,7 @@ export class Pickup {
         let screenX = unit.worldX - this.game.cameraX + SPRITE_OFFSET
         let screenY = unit.worldY - this.game.cameraY + SPRITE_OFFSET
         //let image = this.images[unit.kind]
-        if (image == null) {
+        if (unit.image == null) {
           return
         }
         this.game.ctx.drawImage(
@@ -542,7 +545,7 @@ export class Pickup {
   collectItemSpecialActions (unit) {
     if (unit.active) {
       this.game.brain.collectItemAction(unit.kind)
-      this.game.brain.collectItemCategoryAction(unit.category)
+      this.game.brain.collectItemKindAction(unit.kind)
       if (unit.kind >= BOX_KIND_MIN_INDEX && unit.kind <= BOX_KIND_MAX_INDEX) {
         this.boxes += 1
         console.log('Boxes ' + this.boxes)

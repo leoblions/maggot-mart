@@ -220,7 +220,7 @@ export class Tilegrid {
 
   setTile (gridX, gridY, kind) {
     // does not persist across level changes
-    debugger
+    
 
     if (
       kind < this.images.length &&
