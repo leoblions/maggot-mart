@@ -34,5 +34,19 @@
     "level": 0,
     "gridX": 14,
     "gridY": 4
+  },
+  {
+    "locationID": 6,
+    "_desc": "elliot in break room",
+    "level": 1,
+    "gridX": 11,
+    "gridY": 15
+  },
+  {
+    "locationID": 7,
+    "_desc": "maggot outdoor",
+    "level": 2,
+    "gridX": 11,
+    "gridY": 5
   }
 ]

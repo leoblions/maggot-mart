@@ -1,9 +1,20 @@
 import * as Utils from './utils.js'
+import * as Imageutils from './imageutils.js'
+import Enums from './enums.js'
 
 const MAX_UNITS = 10
 const SPRITE_WIDTH = 50
 const SPRITE_HEIGHT = 50
 const SPRITE_OFFSET = 25
+
+// 0 food, 1 box, 2 spray, 3 trap, 4 key
+const PK_FOOD = 0
+const PK_BOX = 1
+const PK_SPRAY = 2
+const PK_TRAP = 3
+const PK_KEY = 4
+const PK_TORCH = 5
+const PK_PROPANE = 6
 
 const PICKUP_RATE = 5000
 const UPDATE_CULL_PERIOD = 1000
@@ -58,28 +69,41 @@ class Unit {
     let max, index, image, collection
 
     switch (this.kind) {
-      case 0:
+      case Enums.PK_FOOD:
         //food
         collection = Pickup.imagesProduce
         break
-      case 1:
+      case Enums.PK_BOX:
         //box
         collection = Pickup.imagesBox
         break
-      case 2:
+      case Enums.PK_SPRAY:
         //spray
         collection = Pickup.imagesCan
 
         break
-      case 3:
+      case Enums.PK_TRAP:
         //trap
         collection = Pickup.imagesTrap
         return collection[0]
         break
-      case 4:
+      case Enums.PK_KEY:
         //spray
         collection = Pickup.imagesKey
         break
+      case Enums.PK_TORCH:
+        collection = Pickup.imagesTorch
+        break
+      case Enums.PK_PROPANE:
+        collection = Pickup.imagesPropane
+        break
+      case Enums.PK_BAG:
+        collection = Pickup.imagesBag
+        break
+      case Enums.PK_MEDKIT:
+        collection = Pickup.imagesMedkit
+        break
+
       default:
         console.error('invalid kind ' + kind)
         return null
@@ -105,7 +129,7 @@ export class Pickup {
     this.imagesInitialized = false
   }
   constructor (game) {
-    this.objectiveCategory = 0 // 0 box, 1 spray, 2 key, 3 trap
+    this.objectiveCategory = 0 // 0 box, 1 spray, 2 key, 3 trap - does not correspond to kinds
     this.addObjectiveItemEnabled = false
     this.currentObjectiveItem = 36
     this.spawnObjectiveItem = true
@@ -135,50 +159,6 @@ export class Pickup {
     this.spawndata = await response.json()
   }
 
-  async getImagesFromURL (URL, cols, rows, width, height) {
-    async function imageLoadPF (URL) {
-      let imageLoadP = new Promise((resolve, reject) => {
-        let sheet = new Image()
-        sheet.src = URL
-        sheet.onload = () => {
-          console.error('load image good')
-          resolve(sheet)
-        }
-        sheet.onerror = () => {
-          console.error('load image failed')
-          reject(sheet)
-        }
-      })
-      let image = await imageLoadP
-      return image
-    }
-    async function imageCutPF (image, cols, rows, width, height) {
-      let imageCutP = new Promise((resolve, reject) => {
-        Utils.cutSpriteSheetCallback(
-          image,
-          cols,
-          rows,
-          width,
-          height,
-          output => {
-            if (output == undefined) {
-              reject(output)
-            } else {
-              resolve(output)
-            }
-
-            console.log('pickup images loaded')
-          }
-        )
-      })
-      let imageArray = await imageCutP
-      return imageArray
-    }
-    let sheet = await imageLoadPF(URL)
-    let arr = await imageCutPF(sheet, cols, rows, width, height)
-    return arr
-  }
-
   objectiveItemActive () {
     let objItem = this.units[OBJECTIVE_ITEM_SLOT]
     if (
@@ -203,14 +183,14 @@ export class Pickup {
       return
     }
 
-    Pickup.imagesProduce = await this.getImagesFromURL(
+    Pickup.imagesProduce = await Imageutils.getImagesFromURL(
       '/images/produce.png',
       6,
       6,
       100,
       100
     )
-    let boxesAndCans = await this.getImagesFromURL(
+    let boxesAndCans = await Imageutils.getImagesFromURL(
       '/images/boxescans.png',
       4,
       4,
@@ -219,9 +199,9 @@ export class Pickup {
     )
     Pickup.imagesBox = boxesAndCans.slice(0, 9)
     Pickup.imagesCan = boxesAndCans.slice(10, 14)
-    Pickup.imagesTrap = boxesAndCans.slice(15, 16)
+    Pickup.imagesTrap = [boxesAndCans[15]]
 
-    let keyImages = await this.getImagesFromURL(
+    let keyImages = await Imageutils.getImagesFromURL(
       '/images/keys.png',
       4,
       4,
@@ -229,6 +209,43 @@ export class Pickup {
       100
     )
     Pickup.imagesKey = keyImages.slice(0, 9)
+
+    Pickup.imagesWeedburner = [
+      await Imageutils.getSingleImageFromURL(
+        '/images/keys.png',
+        200,
+        200,
+        200,
+        100
+      )
+    ]
+    Pickup.imagesPropane = [
+      await Imageutils.getSingleImageFromURL(
+        '/images/keys.png',
+        0,
+        300,
+        100,
+        100
+      )
+    ]
+    Pickup.imagesBag = [
+      await Imageutils.getSingleImageFromURL(
+        '/images/keys.png',
+        100,
+        300,
+        100,
+        100
+      )
+    ]
+    Pickup.imagesMedkit = [
+      await Imageutils.getSingleImageFromURL(
+        '/images/keys.png',
+        200,
+        300,
+        100,
+        100
+      )
+    ]
 
     Pickup.imagesInitialized = true
   }
@@ -352,25 +369,25 @@ export class Pickup {
    * 0 box, 1 spray, 2 key, 3 trap
    * @return{number} - item kind
    */
-  selectObjectiveItemKindFromCurrentCategory () {
-    // 0 box, 1 spray, 2 key, 3 trap
-    let kind = 0
-    switch (this.objectiveCategory) {
-      case 0:
-        kind = Utils.randRange(BOX_KIND_MIN_INDEX, BOX_KIND_MAX_INDEX)
-        break
-      case 1:
-        kind = Utils.randRange(SPRAY_KIND_MIN_INDEX, SPRAY_KIND_MAX_INDEX)
-        break
-      case 2:
-        kind = Utils.randRange(KEY_KIND_MIN_INDEX, KEY_KIND_MAX_INDEX)
-        break
-      case 3:
-        kind = 51
-        break
-    }
-    return kind
-  }
+  // selectObjectiveItemKindFromCurrentCategory () {
+  //   // 0 box, 1 spray, 2 key, 3 trap
+  //   let kind = 0
+  //   switch (this.objectiveCategory) {
+  //     case 0:
+  //       kind = Utils.randRange(BOX_KIND_MIN_INDEX, BOX_KIND_MAX_INDEX)
+  //       break
+  //     case 1:
+  //       kind = Utils.randRange(SPRAY_KIND_MIN_INDEX, SPRAY_KIND_MAX_INDEX)
+  //       break
+  //     case 2:
+  //       kind = Utils.randRange(KEY_KIND_MIN_INDEX, KEY_KIND_MAX_INDEX)
+  //       break
+  //     case 3:
+  //       kind = 51
+  //       break
+  //   }
+  //   return kind
+  // }
 
   selectObjectiveItemKindFromCategory (category) {
     // old 0 box, 1 spray, 2 key, 3 trap
@@ -474,25 +491,23 @@ export class Pickup {
    * @param {number} gridX grid location of objective unit left to right
    * @param {number} gridY grid location of objective unit top to bottom
    * @param {number} level which level to assign objective unit(location)
-   * @param {number} category used to select a kind (kind!=category)
+   * @param {number} kind  used to select a kind  eg. 0 = food
    * @returns reference to the unit
    */
-  addObjectiveUnitXYLC (gridX, gridY, level, category = this.objectiveCategory) {
-    category = Number(category)
-
+  addObjectiveUnitXYLK (gridX, gridY, level, kind) {
     let newUnit = null
 
     let currentObjItem = this.units[OBJECTIVE_ITEM_SLOT]
     if (currentObjItem == undefined || currentObjItem?.active == false) {
       //debugger
-      let kind = this.selectObjectiveItemKindFromCategory(category)
+      //let kind = this.selectObjectiveItemKindFromCategory(category)
 
       let worldX = gridX * this.game.tilegrid.tileSize
       let worldY = gridY * this.game.tilegrid.tileSize
 
       newUnit = this.units[OBJECTIVE_ITEM_SLOT] = new Unit(worldX, worldY, kind)
       newUnit.objective = true
-      newUnit.category = category
+      //newUnit.category = category
       newUnit.level = level
     }
 
@@ -567,7 +582,10 @@ export class Pickup {
   update () {
     let checkVisible = this.updateCullPacer()
     let checkTouched = this.checkTouchPacer()
-    this.randomPlacePacer() && this.addRandomUnit()
+    if (this.randomPlacePacer() && this.game.level == Enums.LK_FRONT) {
+      this.addRandomUnit()
+    }
+
     if (this.addObjectiveItemEnabled && this.addObjectiveItemPacer()) {
       this.addObjectiveUnit()
     }

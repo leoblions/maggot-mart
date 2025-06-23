@@ -260,6 +260,8 @@ export class Pathfind {
 
   entitySteeringMatrix (worldX, worldY) {
     //debugger
+    worldX -= TARGET_OFFSET_X
+    worldY -= TARGET_OFFSET_Y
     let gridX = Math.floor(worldX / tileSize)
     let gridY = Math.floor(worldY / tileSize)
     let gridvalues = [0, 0, 0, 0, 0]

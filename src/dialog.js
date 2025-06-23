@@ -52,6 +52,7 @@ export class Dialog {
     this.currentText = 'no text'
     this.chainMaxLineNumber = 0
     this.playerPressedActivate = false
+    this.onclose = null
     this.initChains()
   }
 
@@ -134,6 +135,9 @@ export class Dialog {
     let actionID = this.currentChainObj?.actionID
     if (actionID != null) {
       this.game.brain.dialogInvokeAction(actionID)
+    }
+    if (typeof this.onclose == 'function') {
+      this.onclose()
     }
   }
 

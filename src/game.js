@@ -144,11 +144,12 @@ window.onload = function () {
     game.collision = new Collision(game)
     game.tilegrid = new Tilegrid(game)
     game.decor = new Decor(game)
-    game.brain = new Brain(game)
+
     game.projectile = new Projectile(game)
     game.editor = new Editor(game)
 
     game.entity = new Entity(game)
+    game.brain = new Brain(game)
     game.splat = new Splat(game)
     game.rastertext = new Rastertext(game)
     game.menu = new Menu(game)

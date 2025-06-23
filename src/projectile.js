@@ -1,4 +1,5 @@
 import * as Utils from './utils.js'
+import * as Assets from './assets.js'
 
 const MAX_UNITS = 10
 const SPRITE_WIDTH = 100
@@ -45,6 +46,8 @@ class Unit {
 }
 
 export class Projectile {
+  static sprayImages
+  static fireImages
   static imagesLoaded = false
   static speed = PROJECTILE_SPEED
   static animateSpeed = 60
@@ -57,27 +60,32 @@ export class Projectile {
   }
 
   initImages () {
-    if (Projectile.imagesLoaded == true) {
-      return
-    }
-    let sheet = new Image()
+    // if (Projectile.imagesLoaded == true) {
+    //   return
+    // }
+    // let sheet = new Image()
 
-    sheet.src = './images/projectile1m.png'
-    sheet.onload = () => {
-      this.ready = true
-      let imagesU, imagesD, imagesL, imagesR
-      //promises
-      Utils.cutSpriteSheetCallback(sheet, 8, 1, 100, 100, output => {
-        imagesU = output
-        //debugger
-        imagesD = Utils.rotateImageArray(imagesU, 180)
-        imagesL = Utils.rotateImageArray(imagesU, 270)
-        imagesR = Utils.rotateImageArray(imagesU, 90)
-        this.images = imagesU.concat(imagesD, imagesL, imagesR)
-        Projectile.imagesLoaded = true
-        console.log('projectile images loaded')
-      })
-    }
+    // sheet.src = './images/projectile1m.png'
+    // sheet.onload = () => {
+    //   this.ready = true
+    //   let imagesU, imagesD, imagesL, imagesR
+    //   //promises
+    //   Utils.cutSpriteSheetCallback(sheet, 8, 1, 100, 100, output => {
+    //     imagesU = output
+    //     //debugger
+    //     imagesD = Utils.rotateImageArray(imagesU, 180)
+    //     imagesL = Utils.rotateImageArray(imagesU, 270)
+    //     imagesR = Utils.rotateImageArray(imagesU, 90)
+    //     this.images = imagesU.concat(imagesD, imagesL, imagesR)
+    //     Projectile.imagesLoaded = true
+    //     console.log('projectile images loaded')
+    //   })
+    // }
+
+    this.sprayImages = Assets.sprayImg
+    this.flameImages = Assets.flameImg
+    this.images = Assets.sprayImg
+    Projectile.imagesLoaded = true
   }
 
   addUnit (worldX, worldY, kind) {

@@ -1,6 +1,7 @@
 import * as Utils from './utils.js'
 import * as Assets from './assets.js'
 import * as Tilegrid from './tilegrid.js'
+import Enums from './enums.js'
 
 const MAX_UNITS = 15
 const ENEMY_START_ARRAY_INDEX = 5
@@ -34,6 +35,7 @@ const EK_DARRYL = 11
 const EK_TARGET = 20
 const DEFAULT_ENEMIES_LIMIT = 3
 const TARGET_MARKER_ARRAY_INDEX = 4
+const MOVE_PERIOD = 10
 /*
 Entity kinds
 0-7 enemy
@@ -53,7 +55,8 @@ class Unit {
     this.kind = kind // what kind of entity.  Each enemy and NPC type is a kind. Player is not an entity
     this.worldX = worldX
     this.worldY = worldY
-    this.active = true
+    this.active = true // is entity displayed, processed for current room.  Set unit reference to null to remove
+    this.alive = true // wen dead, unit can be deleted
     this.deactivateOnInteract = false
     this.imageSet = 0 // up down left right
     this.level = Entity.currentLevel
@@ -62,25 +65,36 @@ class Unit {
     this.direction = 'd' // u d l r
     this.imageArray = null
     this.imagesPerDirection = 6
+    this.dialogChain = -1
     // kind specific data
     switch (this.kind) {
-      case EK_MANAGER:
+      case Enums.EK_MAGGOT:
+        this.imagesPerDirection = 4
+        this.width = 70
+        this.height = 70
+        this.state = 'f'
+        this.imageArray = Entity.maggotImages
+        this.isEnemy = true
+        break
+      case Enums.EK_MANAGER:
         this.imagesPerDirection = 4
         this.width = 80
         this.height = 120
         this.state = 's'
         this.imageArray = Entity.managerImages
         this.isEnemy = false
+        this.dialogChain = 0
         break
-      case EK_ELLIOT:
+      case Enums.EK_ELLIOT:
         this.imagesPerDirection = 6
         this.width = 80
         this.height = 110
         this.state = 's'
         this.imageArray = Entity.elliotImages
         this.isEnemy = false
+        this.dialogChain = 1
         break
-      case EK_DARRYL:
+      case Enums.EK_DARRYL:
         this.imagesPerDirection = 4
         this.state = 'w'
         this.isEnemy = false
@@ -89,7 +103,7 @@ class Unit {
         this.height = 100
         this.speed = 1
         break
-      case EK_TARGET:
+      case Enums.EK_TARGET:
         this.imagesPerDirection = 6
         this.state = 's'
         this.direction = 'u'
@@ -99,7 +113,16 @@ class Unit {
         this.height = 100
         this.imageArray = Entity.markerImages
         break
-      case EK_TREY:
+      case Enums.EK_TREY:
+        this.imagesPerDirection = 4
+        this.state = 'w'
+        this.isEnemy = false
+        this.imageArray = Entity.treyImages
+        this.width = 80
+        this.height = 100
+        this.speed = 1
+        break
+      case Enums.EK_ALBERT:
         this.imagesPerDirection = 4
         this.state = 'w'
         this.isEnemy = false
@@ -141,7 +164,7 @@ class Unit {
       this.life = newLife
     } else {
       this.life = 0
-      this.active = false
+      this.alive = false
     }
     console.log(`entity took damage. new life: ${this.life}`)
   }
@@ -174,6 +197,7 @@ export class Entity {
       CHANGE_DIRECTION_PERIOD_W
     )
     this.changeFramePacer = Utils.createMillisecondPacer(FRAME_DURATION_MS)
+    this.movePacer = Utils.createTickPacer(MOVE_PERIOD)
     this.playerPressedActivate = false
     this.actorLocationData = null
     this.initActorLocationData()
@@ -193,15 +217,18 @@ export class Entity {
     Entity.treyImages = Assets.treyImg
     Entity.darrylImages = Assets.darrylImg
     Entity.markerImages = Assets.markerImg
+    Entity.maggotImages = Assets.maggotImg
+    Entity.albertImages = Assets.albertImg
   }
 
   async initActorLocationData () {
     this.actorLocationData = await fetch('./data/location_actor.json')
     this.actorLocationData = await this.actorLocationData.json()
-    this.placeActorOnGrid(EK_MANAGER, 0)
-    this.placeActorOnGrid(EK_ELLIOT, 1)
-    this.placeActorOnGrid(EK_TREY, 2)
-    this.placeActorOnGrid(EK_DARRYL, 5)
+    this.placeActorOnGrid(Enums.EK_MANAGER, 0)
+    this.placeActorOnGrid(Enums.EK_ELLIOT, 1)
+    this.placeActorOnGrid(Enums.EK_TREY, 2)
+    this.placeActorOnGrid(Enums.EK_DARRYL, 5)
+    this.placeActorOnGrid(Enums.EK_MAGGOT, 7)
   }
 
   placeActorOnGrid (actorKind, locationID) {
@@ -266,14 +293,31 @@ export class Entity {
     }
   }
 
-  moveEntityToGridXY (kind, gridX, gridY, level) {
-    let [matchedEntity] = this.units.filter(val, index, () => {
+  moveEntityKindToGridXY (kind, gridX, gridY, level) {
+    if (typeof kind != 'number') {
+      throw 'kind is not a number'
+    }
+    let [entity] = this.units.filter(val, index, () => {
       return value.kind == kind
     })
-    if (undefined != matchedEntity) {
-      Object.assign(matchedEntity, { gridX, gridY, level })
+    if (undefined != entity) {
+      Object.assign(entity, { gridX, gridY, level })
+      entity.worldX = gridX * this.game.tilegrid.tileSize
+      entity.worldY = gridY * this.game.tilegrid.tileSize
       return true
     } else {
+      return false
+    }
+  }
+
+  moveEntityToGridXY (entity, gridX, gridY, level) {
+    if (undefined != entity) {
+      Object.assign(entity, { gridX, gridY, level })
+      entity.worldX = gridX * this.game.tilegrid.tileSize
+      entity.worldY = gridY * this.game.tilegrid.tileSize
+      return true
+    } else {
+      throw 'entity is not a entity'
       return false
     }
   }
@@ -296,7 +340,7 @@ export class Entity {
   }
   targetIsSet () {
     let marker = this.units[TARGET_MARKER_ARRAY_INDEX]
-    if (marker != null && (marker.active || marker.level != this.game.level)) {
+    if (marker != null && marker.alive) {
       return true
     } else {
       return false
@@ -322,6 +366,59 @@ export class Entity {
     return unit
   }
 
+  moveEntity (kind, gridX, gridY, level) {
+    // finds the entity of correct kind and moves them
+    for (let iter in this.units) {
+      let unit = this.units[iter]
+      if (unit == undefined) {
+        continue
+      }
+      if (kind == unit.kind) {
+        this.units[iter].gridX = gridX
+        this.units[iter].gridY = gridY
+        this.units[iter].level = level
+        this.moveEntityToGridXY(this.units[iter], gridX, gridY, level)
+      }
+    }
+  }
+
+  removeEntityByKind (kind) {
+    // deletes all entity of a specific type
+    for (let iter in this.units) {
+      let unit = this.units[iter]
+      if (unit == undefined) {
+        continue
+      }
+      if (kind == unit.kind) {
+        this.units[iter] = null
+      }
+    }
+  }
+  entitySetDialogChain (kind, chainID) {
+    for (let unit of this.units) {
+      if (unit == undefined) {
+        continue
+      }
+
+      if (kind == unit.kind) {
+        unit.dialogChain = chainID
+        return
+      }
+    }
+  }
+
+  getEntity (kind) {
+    // return reference to an entity
+    for (let unit of this.units) {
+      if (unit == undefined) {
+        continue
+      }
+      if (kind == unit.kind) {
+        return unit
+      }
+    }
+  }
+
   addUnitToGrid (gridX, gridY, kind, level = 0, forceAdd = false) {
     let worldX = Math.round(gridX * this.game.tileSize)
     let worldY = Math.round(gridY * this.game.tileSize)
@@ -329,7 +426,7 @@ export class Entity {
 
     for (let i = 0; i < MAX_UNITS; i++) {
       let element = this.units[i]
-      if (!(element instanceof Unit) || !element.active) {
+      if (!(element instanceof Unit) || !element.alive) {
         if (forceAdd || this.spawnPacer()) {
           this.units[i] = new Unit(worldX, worldY, kind)
 
@@ -349,7 +446,7 @@ export class Entity {
     let unit = null
     for (let i = 0; i < MAX_UNITS; i++) {
       let element = this.units[i]
-      if (!(element instanceof Unit) || !element.active) {
+      if (!(element instanceof Unit) || !element.alive) {
         if (forceAdd || this.spawnPacer()) {
           this.units[i] = new Unit(worldX, worldY, kind)
           unit = this.units[i]
@@ -367,7 +464,12 @@ export class Entity {
     let amount = 0
     for (let i = 0; i < MAX_UNITS; i++) {
       let element = this.units[i]
-      if (element instanceof Unit && element.active && element.isEnemy) {
+      if (
+        element instanceof Unit &&
+        element.active &&
+        element.alive &&
+        element.isEnemy
+      ) {
         amount++
       }
     }
@@ -397,7 +499,12 @@ export class Entity {
     }
   }
 
+  /**
+   * @deprecated
+   * @param {Unit} unit reference to unit
+   */
   setVelocityB (unit) {
+    console.warn('do not use this function')
     let direction = this.game.pathfind.getDirectionTowardsPlayer(
       unit.worldX,
       unit.worldY
@@ -568,13 +675,14 @@ export class Entity {
       let max = 0
 
       switch (unit.kind) {
-        case EK_MANAGER:
-        case EK_ELLIOT:
-        case EK_TREY:
-        case EK_DARRYL:
+        case Enums.EK_MANAGER:
+        case Enums.EK_ELLIOT:
+        case Enums.EK_TREY:
+        case Enums.EK_DARRYL:
+        case Enums.EK_MAGGOT:
           this.selectImageCharacter(unit)
           break
-        case EK_TARGET:
+        case Enums.EK_TARGET:
           cycleImageHere = true
           min = 0
           max = 6
@@ -625,7 +733,7 @@ export class Entity {
         imageSet = 0
         break
     }
-    if (unit.kind == EK_TARGET) {
+    if (unit.kind == Enums.EK_TARGET) {
       debugger
     }
 
@@ -650,9 +758,15 @@ export class Entity {
     )
   }
 
+  canSpawnEnemy () {
+    let enemies = this.getAmountActiveEnemies()
+    return enemies <= this.currentEnemiesLimit
+  }
+
   update () {
     Entity.currentLevel = this.game.level
-
+    this.game.brain.spawnerFlags.enabled = Entity.spawner
+    let mpvalue = this.movePacer()
     let changeFrame = this.changeFramePacer()
     this.changeDirectionTick = this.changeDirectionWander()
     this.changeDirectionActive = this.changeDirectionPacer()
@@ -667,16 +781,15 @@ export class Entity {
     for (let unit of this.units) {
       if (unit instanceof Unit) {
         unit.index = index
-        if (unit.level == Entity.currentLevel && unit.life > 0) {
-          unit.active = true
-        } else {
-          // if unit is in a different level, deactivate and don't show
-          unit.active = false
-        }
+        unit.alive = unit.life > 0
+        unit.active = unit.level == this.game.level && unit.alive
 
         if (unit.active) {
           this.entityPlayerInteract(unit)
-          this.entityMotion(unit)
+          if (mpvalue) {
+            this.entityMotion(unit)
+          }
+
           //this.setDirection(unit)
           changeFrame && this.entitySelectImage(unit)
           unit.leftOfPlayer = unit.worldX < this.game.player.worldX

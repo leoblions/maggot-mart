@@ -1,31 +1,31 @@
 [
   {
-    "markerID": 0,
-    "name": "box",
+    "locationID": 0,
+    "name": "front area",
     "_desc": "gridX, gridY, level",
     "gridX": 8,
     "gridY": 8,
     "level": 0
   },
   {
-    "markerID": 1,
-    "name": "dumpster",
+    "locationID": 1,
+    "name": "storage",
     "_desc": "gridX, gridY, level",
     "gridX": 16,
     "gridY": 13,
-    "level": 2
-  },
-  {
-    "markerID": 2,
-    "name": "trash can",
-    "_desc": "gridX, gridY, level",
-    "gridX": 17,
-    "gridY": 3,
     "level": 1
   },
   {
-    "markerID": 3,
-    "name": "bags basement",
+    "locationID": 2,
+    "name": "loading dock",
+    "_desc": "gridX, gridY, level",
+    "gridX": 17,
+    "gridY": 3,
+    "level": 2
+  },
+  {
+    "locationID": 3,
+    "name": "basement",
     "_desc": "gridX, gridY, level",
     "gridX": 17,
     "gridY": 17,

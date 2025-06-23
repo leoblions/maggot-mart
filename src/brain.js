@@ -1,12 +1,18 @@
 import * as Utils from './utils.js'
 import { Tilegrid } from './tilegrid.js'
+import Enums from './enums.js'
 
 const MAX_UNITS = 10
 const VERBOSE = true
 
+const LK_STORAGE = 1
+const PK_KEY = 4
+
 const CYCLE_FLAGS_PERIOD = 800
 const CLICK_ADD_PACER = 1000
 const STAGE_RUN_PACER_PERIOD = 500
+const SPAWNER_PACER_PERIOD = 2000
+const TARGET_CLICK_DEBOUNCE = 1000
 const HIGHTLIGHT_COLOR = `rgba(1, 100, 100, 0.5)`
 const DEFAULT_LEVEL_DATA_URL = '/data/trigger0.txt'
 const LEVEL_DATA_PREFIX = '/data/actionTable'
@@ -18,6 +24,7 @@ const TILE_DOOR = 23
 
 const INTERMISSION_0 = 'talk to boss'
 const INTERMISSION_1 = 'talk to elliot'
+const OM_GREENBIN = 'put in green bin'
 const BLOCK_DUPLICATE_CONSECUTIVE_ACTIONS = true
 // categories: 0 box, 1 spray, 2 key, 3 trap 4 carts  5 hives
 const OBJECTIVE_NAMES = [
@@ -29,10 +36,6 @@ const OBJECTIVE_NAMES = [
   'hives'
 ]
 const OBJECTIVE_AMOUNTS = [5, 5, 5, 5, 5]
-
-const EK_MANAGER = 8
-const EK_ELLIOT = 9
-const EK_OBJECTIVE = 20
 
 /**
  * Data format:
@@ -91,21 +94,20 @@ export class Brain {
      * readyFNO = player did carry object and pressed OM
      * marker pressed = player pressed OM
      */
-    this.stageFlags = {
-      carry: false,
-      mustCarry: false,
-      readyForNextObjective: false,
-      readyForNextStage: false,
-      targetPressed: false
+    this.spawnerFlags = {
+      location: null,
+      locationID: 0,
+      enabled: true,
+      kind: Enums.EK_MAGGOT
     } // flags to modify behavior of actions, or disable them
     this.stageFlags = {
       category: 0,
       complete: 0,
       incomplete: 0,
-      total: 1,
-      markerID: -1,
+      pickuptotal: 1,
+      locationID: -1,
       markers: 0,
-      kind: 0,
+      pickupKind: 0,
       markerSet: false,
       pickupIsSet: false,
       pickupPressed: false,
@@ -117,29 +119,46 @@ export class Brain {
       readyForNextTarget: false,
       readyForNextPickup: false,
       readyForNextStage: false,
+      stageDialogFlag: 0,
+      actorPressedKind: 0,
+      actorPressed: false,
       targetPressed: false,
       targetsPressed: 0,
       targetIsSet: false
     }
-    this.warpDestinations = null
+    this.locationRecordsWarp = null
     this.stageData = null
-    this.itemLocationData = null
-    this.markerLocationData = null
+    this.locationRecordsPickup = null
+    this.locationRecordsTarget = null
     this.cycleFlagsPacer = new Utils.createMillisecondPacer(CYCLE_FLAGS_PERIOD)
     this.stageRunPacer = new Utils.createMillisecondPacer(
       STAGE_RUN_PACER_PERIOD
     )
+    this.spawnerPacer = new Utils.createMillisecondPacer(SPAWNER_PACER_PERIOD)
     this.clickAddPacer = new Utils.createMillisecondPacer(CLICK_ADD_PACER)
     //this.defaultInitializer()
     this.initStageData()
     this.initLocationData()
+    this.initStage(0)
   }
 
   setObjective (category) {
     this.stageFlags.category = category
     this.stageFlags.complete = 0
-    this.stageFlags.total = OBJECTIVE_AMOUNTS[category] ?? 0
+    this.stageFlags.pickuptotal = OBJECTIVE_AMOUNTS[category] ?? 0
     this.setObjectiveText()
+  }
+
+  getLocation (collection, locationID) {
+    for (let loc of collection) {
+      let lid = loc?.locationID ?? null
+
+      if (lid == locationID) {
+        return loc
+      }
+    }
+    console.error('location not found ' + locationID)
+    return null
   }
 
   loadDataFromRecord (stageID) {
@@ -150,72 +169,12 @@ export class Brain {
         this.stageFlags.mustCarry = record?.mustCarry ?? false
         this.stageFlags.complete = 0
         this.stageFlags.incomplete = record.amount
-        this.stageFlags.total = record.amount
-        this.stageFlags.markerID = record?.markerID ?? -1
+        this.stageFlags.pickuptotal = record.amount
+        this.stageFlags.locationID = record?.locationID ?? -1
 
         break
       }
     }
-  }
-
-  initStage (stageID) {
-    this.loadDataFromRecord(stageID)
-    this.stageFlags.advanceStage = false // must do at start of every stage to prevent runaway loop
-    // pickup kinds 0 food, 1 box, 2 spray, 3 trap, 4 key
-    switch (stageID) {
-      case 1:
-        this.stageFlags.boxesCollected = 0
-        this.stageFlags.boxesPlaced = 0
-        this.stageFlags.kind = 1
-        this.stageFlags.boxesPlacedRequired = 3
-        this.stageFlags.total = 3
-        this.setObjectiveText()
-
-        break
-      case 3:
-        this.stageFlags.kind = 2
-        this.stageFlags.pickupIsSet = false
-        this.stageFlags.pickupsRequired = 4
-        this.stageFlags.targetsRequired = 1
-        this.stageFlags.targetsPressed = 0
-        this.stageFlags.pickupsPressed = 0
-        this.setObjectiveText()
-        break
-
-      case 5:
-        this.stageFlags.pickupsRequired = 4
-        this.stageFlags.targetsRequired = 1
-        this.stageFlags.targetsPressed = 0
-        this.stageFlags.pickupsPressed = 0
-        this.stageFlags.kind = 3
-        this.stageFlags.total = 4
-        this.setObjectiveText()
-        break
-
-      case 7:
-        this.stageFlags.targetsPressed = 0
-        this.stageFlags.pickupsPressed = 0
-        this.stageFlags.touchedCan = false
-        this.stageFlags.foundBags = false
-        this.stageFlags.foundKey = false
-        break
-      default:
-        //this.setObjectiveText()
-        break
-    }
-    // applies for all stages
-    this.stageFlags.carry = false
-    this.stageFlags.targetsPressed = 0
-    this.stageFlags.pickupsPressed = 0
-    this.stageFlags.targetPressed = false
-    this.stageFlags.pickupPressed = false
-    this.stageFlags.targetsPressed = 0
-    this.stageFlags.pickupsPressed = 0
-    this.stageFlags.pickupIsSet = false
-    this.stageFlags.targetIsSet = false
-    this.stageFlags.readyForNextTarget = false
-    this.currentItemIndex = 0 // used to select location of objective pickup
-    //this.setObjectiveText()
   }
 
   async initStageData () {
@@ -226,15 +185,21 @@ export class Brain {
   }
 
   async initLocationData () {
-    //fetch returns a promise
-    this.itemLocationData = await fetch('./data/location_item.json')
-    this.itemLocationData = await this.itemLocationData.json()
+    // read in locations records and parse the json to an object array
+    this.locationRecordsPickup = await fetch('./data/location_item.json')
+    this.locationRecordsPickup = await this.locationRecordsPickup.json()
 
-    this.markerLocationData = await fetch('./data/location_marker.json')
-    this.markerLocationData = await this.markerLocationData.json()
+    this.locationRecordsActor = await fetch('./data/location_actor.json')
+    this.locationRecordsActor = await this.locationRecordsActor.json()
 
-    this.warpDestinations = await fetch('./data/warp_destinations.json')
-    this.warpDestinations = await this.warpDestinations.json()
+    this.locationRecordsTarget = await fetch('./data/location_target.json')
+    this.locationRecordsTarget = await this.locationRecordsTarget.json()
+
+    this.locationRecordsWarp = await fetch('./data/warp_destinations.json')
+    this.locationRecordsWarp = await this.locationRecordsWarp.json()
+
+    this.locationRecordsSpawner = await fetch('./data/location_spawner.json')
+    this.locationRecordsSpawner = await this.locationRecordsSpawner.json()
 
     this.actionTable = await fetch('./data/action_table.json')
     this.actionTable = await this.actionTable.json()
@@ -243,7 +208,7 @@ export class Brain {
 
   getRandomItemLocation () {
     let defaultLocationRecord = null
-    for (const record of this.itemLocationData) {
+    for (const record of this.locationRecordsPickup) {
       if (record.stage == DEFAULT_ITEM_SPAWN_STAGE) {
         defaultLocationRecord = record
       }
@@ -264,7 +229,7 @@ export class Brain {
 
   getNextPickupLocation () {
     let defaultLocationRecord = null
-    let len = this.itemLocationData.length
+    let len = this.locationRecordsPickup.length
     // default location to 0
     if (undefined == this.currentItemIndex) {
       this.currentItemIndex = 0
@@ -319,7 +284,7 @@ export class Brain {
   setObjectiveText (overrideText = null) {
     if (overrideText == null) {
       let newText = ''
-      if (undefined == this.stageFlags.total) {
+      if (undefined == this.stageFlags.pickuptotal) {
       } else {
         let category = this.stageFlags.category ?? 0
         newText =
@@ -327,7 +292,7 @@ export class Brain {
           ' ' +
           this.stageFlags.complete +
           '/' +
-          this.stageFlags.total
+          this.stageFlags.pickuptotal
       }
 
       this.game.hud.objectiveText.updateText(newText)
@@ -350,7 +315,7 @@ export class Brain {
         ) {
           this.stageFlags.moved = true
           this.game.entity.moveEntityToActorPosition(
-            EK_MANAGER,
+            Enums.EK_MANAGER,
             BOSS_OFFICE_POSITION
           )
         }
@@ -360,9 +325,9 @@ export class Brain {
     }
   }
 
-  collectItemAction (kind) {
-    console.log('Pickup item kind ' + kind)
-    if (kind == this.stageFlags.kind) {
+  collectItemAction (pickupKind) {
+    console.log('Pickup item pickupKind ' + pickupKind)
+    if (pickupKind == this.stageFlags.pickupKind) {
       this.stageFlags.carry = true
       this.stageFlags.pickupPressed = true
     }
@@ -377,21 +342,14 @@ export class Brain {
     }
   }
 
-  collectItemKindAction (kind) {
+  collectItemKindAction (pickupKind) {
     // set stageFlags based on player collecting OI
-    if (kind == this.stageFlags.kind) {
+    //console.log('pickup pickupKind was ' + pickupKind)
+    //console.log('objective pickup pickupKind is ' + this.stageFlags.pickupKind)
+    if (pickupKind == this.stageFlags.pickupKind) {
       this.stageFlags.carry = true
       this.stageFlags.pickupPressed = true
     }
-  }
-
-  // spawnNextObjective () {
-  //   this.game.entity.placeTarget(5, 5, 0)
-  // }
-
-  activateObjectiveMarker () {
-    // player pressed on the stageFlags marker(red box with arrow)
-    this.stageFlags.targetPressed = true
   }
 
   enqueueAction (actionID) {
@@ -419,22 +377,35 @@ export class Brain {
     }
   }
 
-  playerActivateNPC (unitKind) {
-    switch (unitKind) {
-      case EK_MANAGER:
-      case EK_ELLIOT:
+  playerActivateNPC (kind) {
+    this.stageFlags.actorPressed = true
+    this.stageFlags.actorPressedKind = kind
+    switch (kind) {
+      case Enums.EK_MANAGER:
+      case Enums.EK_ELLIOT:
         //let managerChainID = this.getManagerDialogChain()
         //console.log('activate npc ' + unitKind)
 
-        let chainID = this.getActorDialogChain(unitKind)
-        this.game.dialog.startDialogChain(chainID)
+        //let chainID = this.getActorDialogChain(unitKind)
+
+        let entref = this.game.entity.getEntity(kind)
+        let chainID = entref?.dialogChain ?? -1
+        if (chainID != -1) {
+          this.game.dialog.startDialogChain(chainID)
+        } else {
+          console.error('failed to get dialog record for unit ' + kind)
+          console.log(this.game.entity.units)
+        }
+
         break
-      case EK_OBJECTIVE:
-        this.activateObjectiveMarker()
+      case Enums.EK_TARGET:
+        this.stageFlags.actorPressed = false
+        this.stageFlags.targetPressed = true
         break
       default:
         break
     }
+    this.game.entity.playerPressedActivate = false
   }
 
   dequeueAction () {
@@ -465,19 +436,19 @@ export class Brain {
 
   warp (destID) {
     let foundIndex = -1
-    for (let i in this.warpDestinations) {
-      if (this.warpDestinations[i].destID == destID) {
+    for (let i in this.locationRecordsWarp) {
+      if (this.locationRecordsWarp[i].destID == destID) {
         foundIndex = i
         break
       }
     }
 
-    // let index = this.warpDestinations.find((value, i, a) => {
+    // let index = this.locationRecordsWarp.find((value, i, a) => {
     //   if (value.destID == destID) {
     //     return i
     //   }
     // })
-    let destUnit = this.warpDestinations[foundIndex] ?? undefined
+    let destUnit = this.locationRecordsWarp[foundIndex] ?? undefined
     if (destUnit == undefined) {
       debugger
       throw 'Matching destunit not found, id: ' + destID
@@ -530,10 +501,10 @@ export class Brain {
       this.stage += 1
       this.game.pickup.removeObjectiveItem()
       this.initStage(this.stage) // once per stage
-      if (this.stageFlags.complete == this.stageFlags.total) {
+      if (this.stageFlags.complete == this.stageFlags.pickuptotal) {
         this.stageFlags.complete = 0
         this.stageFlags.advanceStage = false
-        this.stageFlags.total = 1
+        this.stageFlags.pickuptotal = 1
         this.currentItemIndex = 0
       }
     }
@@ -550,6 +521,9 @@ export class Brain {
     if (this.stageRunPacer()) {
       this.stageRun() // run repeatedly each stage
       this.advanceAndInitStage()
+    }
+    if (this.spawnerPacer()) {
+      this.spawner()
     }
     //this.game.pickup.addObjectiveItemEnabled = true
   }
@@ -634,11 +608,11 @@ export class Brain {
       console.log('MPB spawn pickup')
 
       let location = this.getNextPickupLocation()
-      this.game.pickup.addObjectiveUnitXYLC(
+      this.game.pickup.addObjectiveUnitXYLK(
         location.gridX,
         location.gridY,
         location.level,
-        this.stageFlags.kind
+        this.stageFlags.pickupKind
       )
 
       this.stageFlags.targetPressed = false
@@ -653,7 +627,7 @@ export class Brain {
 
     if (this.stageFlags.readyForNextTarget) {
       console.log('MPB spawn target')
-      let markerObj = this.getMarkerObjectFromID(this.stageFlags.markerID)
+      let markerObj = this.getMarkerObjectFromID(Enums.TL_BOX)
       this.game.entity.placeTarget(
         markerObj.gridX,
         markerObj.gridY,
@@ -670,13 +644,14 @@ export class Brain {
     }
   }
 
-  getMarkerObjectFromID (markerID) {
-    for (let marker of this.markerLocationData) {
-      let currentID = marker?.markerID ?? -1
-      if (currentID == markerID) {
+  getMarkerObjectFromID (locationID) {
+    for (let marker of this.locationRecordsTarget) {
+      let currentID = marker?.locationID ?? -1
+      if (currentID == locationID) {
         return marker
       }
     }
+    console.error('Location not found ' + locationID)
     return null
   }
 
@@ -731,8 +706,9 @@ export class Brain {
 
     if (this.stageFlags.readyForNextTarget) {
       console.log('MGM place target')
+      this.setObjectiveTextIntermission('put in the green dumpster')
       this.stageFlags.readyForNextTarget = false
-      let markerObj = this.getMarkerObjectFromID(this.stageFlags.markerID)
+      let markerObj = this.getMarkerObjectFromID(this.stageFlags.locationID)
       this.stageFlags.markerSet = true
       this.game.entity.placeTarget(
         markerObj.gridX,
@@ -751,11 +727,11 @@ export class Brain {
       console.log(location)
 
       if (location != undefined) {
-        this.game.pickup.addObjectiveUnitXYLC(
+        this.game.pickup.addObjectiveUnitXYLK(
           location.gridX,
           location.gridY,
           location.level,
-          this.stageFlags.kind
+          this.stageFlags.pickupKind
         )
 
         this.stageFlags.readyForNextObjective = false
@@ -823,7 +799,7 @@ export class Brain {
     if (this.stageFlags.readyForNextTarget) {
       console.log('MGC place target')
       this.stageFlags.readyForNextTarget = false
-      let markerObj = this.getMarkerObjectFromID(this.stageFlags.markerID)
+      let markerObj = this.getMarkerObjectFromID(this.stageFlags.locationID)
       this.stageFlags.markerSet = true
       this.game.entity.placeTarget(
         markerObj.gridX,
@@ -837,17 +813,17 @@ export class Brain {
     if (this.stageFlags.readyForNextPickup) {
       this.stageFlags.readyForNextPickup = false
       this.stageFlags.pickupPressed = false
-      console.log('MGC place pickup ' + this.stageFlags.kind)
+      console.log('MGC place pickup ' + this.stageFlags.pickupKind)
 
       let location = this.getNextPickupLocation()
       console.log(location)
 
       if (location != undefined) {
-        this.game.pickup.addObjectiveUnitXYLC(
+        this.game.pickup.addObjectiveUnitXYLK(
           location.gridX,
           location.gridY,
           location.level,
-          this.stageFlags.kind
+          this.stageFlags.pickupKind
         )
 
         this.stageFlags.readyForNextObjective = false
@@ -874,14 +850,6 @@ export class Brain {
     }
   }
 
-  getLocationsFromStageID (stage) {
-    for (let location of this.itemLocationData) {
-      if (location.stage == stage) {
-        return location
-      }
-    }
-    return null
-  }
   missionTrashBasement () {
     let targetIsActive = this.game.entity.targetIsSet()
     let targetInRoom = this.game.entity.targetInCurrentRoom()
@@ -909,20 +877,27 @@ export class Brain {
     }
 
     // PLAYER TOUCH TARGET
-    if (this.stageFlags.targetPressed == true) {
+    if (
+      this.stageFlags.targetPressed == true &&
+      this.game.dialog.active == false
+    ) {
       // player touches trash can in 0
       if (this.stageFlags.touchedCan == false) {
         this.stageFlags.touchedCan = true
         // bags
         console.log('placed trash bag target ')
         this.game.entity.placeTarget(17, 17, 3)
+        this.game.entity.removeEntityByKind(Enums.EK_MANAGER)
         this.game.dialog.startDialogChain(7)
         this.setObjectiveText('Find trash bags')
         this.stageFlags.targetPressed = false
         return
       }
       // player touches bags in basement
-      if (this.stageFlags.touchedCan == true) {
+      if (
+        this.stageFlags.foundBags == false &&
+        this.stageFlags.touchedCan == true
+      ) {
         this.stageFlags.foundBags = true
         //place key
         this.game.dialog.startDialogChain(9)
@@ -935,22 +910,30 @@ export class Brain {
         this.stageFlags.targetPressed = false
         return
       }
+
       if (this.stageFlags.foundBags == true) {
+        //debugger
         //secret exit
-        this.game.entity.placeTarget(2, 10, 3)
-        this.stageFlags.kind = 4
+        //this.game.entity.placeTarget(2, 10, 3)
+        this.stageFlags.pickupKind = 4
         if (this.stageFlags.pickupIsSet == false) {
-          this.game.pickup.addObjectiveUnitXYLC(1, 9, 3, this.stageFlags.kind)
+          this.game.pickup.addObjectiveUnitXYLK(1, 9, 3, Enums.PK_KEY)
           console.log('placed key target ')
           this.stageFlags.pickupIsSet = true
         }
         if (this.stageFlags.targetPressed) {
-          this.game.dialog.startDialogChain(10)
-          this.game.entity.placeTarget(2, 10, 3)
+          if (this.stageFlags.foundKey == true) {
+            this.game.tilegrid.setTile(13, 11, 8) // unlock
+          } else {
+            this.game.dialog.startDialogChain(10)
+            this.game.entity.placeTarget(13, 12, 3)
+          }
+
           this.stageFlags.targetPressed = false
         }
 
         console.log('placed exit target ')
+        return
       }
 
       this.stageFlags.markerSet = true
@@ -959,7 +942,7 @@ export class Brain {
     }
     // PLAYER TOUCH PICKUP
     if (this.stageFlags.pickupPressed) {
-      if (this.stageFlags.kind == 4) {
+      if (this.stageFlags.pickupKind == PK_KEY) {
         this.stageFlags.foundKey = true
         this.setObjectiveText('Unlock door to exit')
         this.stageFlags.foundKey = true
@@ -968,6 +951,68 @@ export class Brain {
 
       this.stageFlags.pickupPressed
     }
+    if (this.stageFlags.foundKey == true && this.game.level == LK_STORAGE) {
+      this.stageFlags.advanceStage = true
+    }
+  }
+
+  missionLastBag () {
+    /**
+     * Talk to elliot
+     * elliot gives bugspray
+     * fetch last trash bag from front
+     * put in green dumpster
+     * maggot attacks from above
+     * talk to elliot
+     */
+    // ACTOR PRESSED
+    if (
+      this.stageFlags.actorPressed == true &&
+      this.stageFlags.actorPressedKind == Enums.EK_ELLIOT
+    ) {
+      this.stageFlags.actorPressed = false
+
+      if (this.stageFlags.stageDialogFlag == 0) {
+        this.stageFlags.stageDialogFlag = 1 // talked to elliot
+      }
+    }
+
+    // SPAWN PICKUPS
+    if (
+      this.stageFlags.pickupIsSet == false &&
+      this.stageFlags.stageDialogFlag == 1 &&
+      this.stageFlags.pickupsPressed == 0
+    ) {
+      this.game.pickup.addObjectiveUnitXYLK(17, 3, 0, Enums.PK_BAG)
+      this.setObjectiveTextIntermission('get trash bag')
+      this.stageFlags.pickupKind = Enums.PK_BAG
+      this.game.entity.placeTarget(16, 13, 2)
+      debugger
+    }
+    // PICKUP PRESSED
+    if (this.stageFlags.pickupPressed) {
+      debugger
+      this.stageFlags.pickupPressed = false
+      this.stageFlags.pickupIsSet = false
+      this.stageFlags.pickupsPressed += 1
+      if (this.stageFlags.pickupsPressed == 1) {
+        this.setObjectiveTextIntermission(OM_GREENBIN)
+      }
+    }
+    //TARGET PRESSED
+    if (this.stageFlags.targetPressed) {
+      this.stageFlags.targetPressed = false
+      this.targetsPressed += 1
+    }
+  }
+
+  getLocationsFromStageID (stage) {
+    for (let location of this.locationRecordsPickup) {
+      if (location.stage == stage) {
+        return location
+      }
+    }
+    return null
   }
 
   placeObjectiveItem () {
@@ -981,7 +1026,7 @@ export class Brain {
     }
     this.lastLocation = location
     if (location != undefined) {
-      this.game.pickup.addObjectiveUnitXYLC(
+      this.game.pickup.addObjectiveUnitXYLK(
         location.gridX,
         location.gridY,
         location.level,
@@ -989,6 +1034,142 @@ export class Brain {
       )
     }
   }
+  /**
+   *
+   * @param {number} stageID which stage or mission to start
+   * This code is run once at the start of each mission
+   */
+  initStage (stageID) {
+    // let alfredChains = [0, 0, 2, 2, 3, 3, 6, 6]
+    // let elliotChains = [1, 1, 1, 1, 5, 5, 5, 5]
+    try {
+      //this.loadDataFromRecord(stageID)
+    } catch (error) {
+      console.error(error)
+    }
+    // nonspecific flags and counters to reset
+    this.stageFlags.targetPressed = false
+    this.stageFlags.actorPressed = false
+    this.stageFlags.pickupPressed = false
+
+    this.stageFlags.pickupsPressed = 0
+    this.stageFlags.targetsPressed = 0
+
+    this.stageFlags.advanceStage = false // must do at start of every stage to prevent runaway loop
+    // pickup pickupKinds 0 food, 1 box, 2 spray, 3 trap, 4 key
+    switch (stageID) {
+      case 0:
+        this.game.entity.entitySetDialogChain(Enums.EK_ELLIOT, 1)
+        this.game.entity.entitySetDialogChain(Enums.EK_MANAGER, 0)
+        break
+      case 1:
+        this.stageFlags.boxesCollected = 0
+        this.stageFlags.boxesPlaced = 0
+        this.stageFlags.pickupKind = 1
+        this.stageFlags.boxesPlacedRequired = 3
+        this.stageFlags.pickuptotal = 3
+        this.game.entity.entitySetDialogChain(Enums.EK_ELLIOT, 1)
+        this.game.entity.entitySetDialogChain(Enums.EK_MANAGER, 0)
+        this.setObjectiveText()
+
+        break
+      case 2:
+        this.game.entity.entitySetDialogChain(Enums.EK_MANAGER, 2)
+        break
+      case 3:
+        this.stageFlags.pickupKind = Enums.PK_SPRAY
+        this.stageFlags.pickupIsSet = false
+        this.stageFlags.pickupsRequired = 4
+        this.stageFlags.targetsRequired = 1
+        this.stageFlags.targetsPressed = 0
+        this.stageFlags.pickupsPressed = 0
+        this.setObjectiveText()
+        break
+      case 4:
+        this.game.entity.entitySetDialogChain(Enums.EK_MANAGER, 3)
+        break
+
+      case 5:
+        this.stageFlags.pickupKind = Enums.PK_TRAP
+        this.stageFlags.pickupsRequired = 4
+        this.stageFlags.targetsRequired = 1
+        this.stageFlags.targetsPressed = 0
+        this.stageFlags.pickupsPressed = 0
+        this.stageFlags.pickupKind = 3
+        this.stageFlags.pickuptotal = 4
+        this.setObjectiveText()
+        break
+      case 6:
+        this.game.entity.entitySetDialogChain(Enums.EK_MANAGER, 6)
+        break
+
+      case 7:
+        this.stageFlags.targetsPressed = 0
+        this.stageFlags.pickupsPressed = 0
+        this.stageFlags.touchedCan = false
+        this.stageFlags.foundBags = false
+        this.stageFlags.foundKey = false
+        break
+      case 8:
+        this.game.entity.entitySetDialogChain(Enums.EK_ELLIOT, 11)
+        this.stageFlags.stageDialogFlag = 0
+        this.stageFlags.actorPressed = false
+        let elliotLoc = this.getLocation(this.locationRecordsActor, 6)
+        this.game.entity.removeEntityByKind(Enums.EK_TREY)
+        this.game.entity.removeEntityByKind(Enums.EK_DARRYL)
+        this.game.entity.removeEntityByKind(Enums.EK_ALFRED)
+        this.game.entity.moveEntity(
+          Enums.EK_ELLIOT,
+          elliotLoc.gridX,
+          elliotLoc.gridY,
+          elliotLoc.level
+        )
+        break
+      default:
+        //this.setObjectiveText()
+        break
+    }
+    // applies for all stages
+    this.stageFlags.carry = false
+    this.stageFlags.targetsPressed = 0
+    this.stageFlags.pickupsPressed = 0
+    this.stageFlags.targetPressed = false
+    this.stageFlags.pickupPressed = false
+    this.stageFlags.targetsPressed = 0
+    this.stageFlags.pickupsPressed = 0
+    this.stageFlags.pickupIsSet = false
+    this.stageFlags.targetIsSet = false
+    this.stageFlags.readyForNextTarget = false
+    this.currentItemIndex = 0 // used to select location of objective pickup
+    //this.setObjectiveText()
+  }
+
+  spawner () {
+    let spawnLevel = this.spawnerFlags.location?.level ?? null
+
+    if (
+      spawnLevel != null &&
+      this.game.level == spawnLevel &&
+      this.spawnerFlags.enabled &&
+      this.game.entity.canSpawnEnemy()
+    ) {
+      this.game.entity.addUnitToGrid(
+        this.spawnerFlags.location.gridX,
+        this.spawnerFlags.location.gridY,
+        this.spawnerFlags.kind,
+        this.spawnerFlags.location.level,
+        true
+      )
+    } else {
+      for (let loc of this.locationRecordsSpawner) {
+        if (loc != null && loc.locationID == this.spawnerFlags.locationID) {
+          this.spawnerFlags.location = loc
+          break
+        }
+      }
+    }
+  }
+
   stageRun () {
     // only this should call things based on stageFlags
     // other stageFlags functions are called externally and modify stageFlags
@@ -997,7 +1178,7 @@ export class Brain {
         break
       case 1:
         //move boxes
-        // pickup kinds 0 food, 1 box, 2 spray, 3 trap, 4 key
+        // pickup pickupKinds 0 food, 1 box, 2 spray, 3 trap, 4 key
         this.missionPlaceBoxes()
         break
       case 2:
@@ -1013,7 +1194,7 @@ export class Brain {
         break
       case 5:
         // mouse traps
-        //this.stageFlags.markerID = 1
+        //this.stageFlags.locationID = 1
         this.missionGatherMousetraps()
 
         break
@@ -1025,30 +1206,12 @@ export class Brain {
       case 7:
         this.missionTrashBasement()
         break
-      default:
-        break
-    }
-  }
-
-  getActorDialogChain (actorID) {
-    let alfredChains = [0, 0, 2, 2, 3, 3, 6, 6]
-    let elliotChains = [1, 1, 1, 1, 5, 5, 5, 5]
-    let chainSet = null
-
-    switch (actorID) {
       case 8:
-        chainSet = alfredChains
+        this.missionLastBag()
         break
-      case 9:
-        chainSet = elliotChains
-        break
-
       default:
-        chainSet = alfredChains
+        break
     }
-    let chainID = chainSet.at(this.stage) ?? 0
-    //console.log('selected manager dialog chain ' + chainID)
-    return chainID
   }
 
   dialogInvokeAction (actionID) {
@@ -1091,6 +1254,14 @@ export class Brain {
           this.stage = 7
           //this.stageFlags.targetPressed = false
           this.initStage(7)
+        }
+
+        break
+      case 4:
+        // categories: 0 box, 1 spray, 2 key, 3 trap 4 carts  5 hives
+        //collect mouse traps
+        if (this.stage != 8) {
+          this.stage = 8
         }
 
         break

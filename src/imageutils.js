@@ -61,6 +61,94 @@ export async function flipImageArrayHorizontalAsync (spriteArray) {
   return sprites
 }
 
+export async function getSingleImageFromURL (
+  URL,
+  startX,
+  startY,
+  width,
+  height
+) {
+  if (typeof URL != 'string') {
+    throw 'URL is not of type string'
+  }
+  async function imageLoadPF (URL) {
+    let imageLoadP = new Promise((resolve, reject) => {
+      let sheet = new Image()
+      sheet.src = URL
+      sheet.onload = () => {
+        //console.log('load image good')
+        resolve(sheet)
+      }
+      sheet.onerror = () => {
+        console.error('load image failed ' + URL)
+        reject(sheet)
+      }
+    })
+    let image = await imageLoadP
+    return image
+  }
+  async function imageCutPF (image, startX, startY, width, height) {
+    let imageCutP = new Promise((resolve, reject) => {
+      Utils.cutSpriteSheetSingleCallback(
+        image,
+        startX,
+        startY,
+        width,
+        height,
+        output => {
+          if (output == undefined) {
+            reject(output)
+          } else {
+            resolve(output)
+          }
+        }
+      )
+    })
+    let imageArray = await imageCutP
+    return imageArray
+  }
+  let sheet = await imageLoadPF(URL)
+  let cutImg = await imageCutPF(sheet, startX, startY, width, height)
+  return cutImg
+}
+
+export async function getImagesFromURL (URL, cols, rows, width, height) {
+  async function imageLoadPF (URL) {
+    let imageLoadP = new Promise((resolve, reject) => {
+      let sheet = new Image()
+      sheet.src = URL
+      sheet.onload = () => {
+        console.error('load image good')
+        resolve(sheet)
+      }
+      sheet.onerror = () => {
+        console.error('load image failed')
+        reject(sheet)
+      }
+    })
+    let image = await imageLoadP
+    return image
+  }
+  async function imageCutPF (image, cols, rows, width, height) {
+    let imageCutP = new Promise((resolve, reject) => {
+      Utils.cutSpriteSheetCallback(image, cols, rows, width, height, output => {
+        if (output == undefined) {
+          reject(output)
+        } else {
+          resolve(output)
+        }
+
+        console.log('pickup images loaded')
+      })
+    })
+    let imageArray = await imageCutP
+    return imageArray
+  }
+  let sheet = await imageLoadPF(URL)
+  let arr = await imageCutPF(sheet, cols, rows, width, height)
+  return arr
+}
+
 export async function getSubImageAsync (image, startX, startY, width, height) {
   if (image.complete == false) {
     throw new Error(

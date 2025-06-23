@@ -1,5 +1,11 @@
 import * as Utils from './utils.js'
 import * as Imageutils from './imageutils.js'
+/**
+ * Must import this file with
+ * import * as Assets from './assets.js'
+ *
+ * This script loads images before other components use them to prevent errors.
+ */
 
 // GUI
 export var fontBig,
@@ -8,14 +14,18 @@ export var fontBig,
   shinyButtons,
   titleImg,
   dialogImg,
-  decorImg
+  decorImg,
+  maggotImg
 // ENTITY
 export var bugsA, managerImg
 // SPECAL ENTITY
-export var elliotImg, claireImg, treyImg, darrylImg
+export var elliotImg, jessImg, treyImg, darrylImg, albertImg, claraImg
 
 // WORLD OBJECT
 export var markerImg
+
+// PROJECTILES
+export var sprayImg, flameImg
 
 //ensure assets are loaded before other classes try using them
 
@@ -77,22 +87,10 @@ export async function loadAssets (callbackFn) {
       200
     )
 
-    // let treySrc = './images/trey2.png'
-    // let treySheet = await getImageData(treySrc)
-    // let treyImgA = await Imageutils.cutSpriteSheetAsync(
-    //   treySheet,
-    //   4,
-    //   4,
-    //   100,
-    //   200
-    // )
-    // treyImgA = treyImgA.slice(0, 12)
-    // let treyImgB = await Imageutils.flipImageArrayHorizontalAsync(
-    //   treyImgA.slice(8, 12)
-    // )
-
-    treyImg = await characterImagesUDL100x200('./images/trey2.png')
-    darrylImg = await characterImagesUDL100x200('./images/darryl2.png')
+    treyImg = await characterImagesUDL('./images/trey2.png', 100, 200)
+    darrylImg = await characterImagesUDL('./images/darryl2.png', 100, 200)
+    albertImg = await characterImagesUDL('./images/albert.png', 100, 100)
+    maggotImg = await characterImagesUDL('./images/maggot.png', 100, 100)
 
     // treyImg = treyImgA.concat(treyImgB)
 
@@ -144,6 +142,9 @@ export async function loadAssets (callbackFn) {
       150
     )
 
+    sprayImg = await initProjectileImages('./images/projectile1m.png')
+    flameImg = await initProjectileImages('./images/flame.png')
+
     markerImg = await Imageutils.cutSpriteSheetAsync(markerSheet, 6, 1, 100, 99)
 
     callbackFn()
@@ -160,14 +161,14 @@ async function getImageData (imageURL) {
   })
 }
 
-async function characterImagesUDL100x200 (imageURL) {
+async function characterImagesUDL (imageURL, width, height) {
   let spriteSheet = await getImageData(imageURL)
   let spriteArrayA = await Imageutils.cutSpriteSheetAsync(
     spriteSheet,
     4,
     4,
-    100,
-    200
+    width,
+    height
   )
   let spriteArrayUDL = spriteArrayA.slice(0, 12)
   let spriteArrayR = await Imageutils.flipImageArrayHorizontalAsync(
@@ -227,4 +228,64 @@ async function initDecorImages () {
 
   imageArrayOutput = imageArr1.concat(imageArr2)
   return imageArrayOutput
+}
+
+async function initProjectileImages (URL) {
+  let sheet = new Image()
+
+  sheet.src = URL
+
+  let sheet1pf = () => {
+    return new Promise((resolve, reject) => {
+      sheet.src = URL
+      sheet.onload = () => {
+        resolve(sheet)
+      }
+      sheet.onerror = () => {
+        reject()
+      }
+    })
+  }
+
+  let imagesArrPF = sheet => {
+    return new Promise((resolve, reject) => {
+      Utils.cutSpriteSheetCallback(sheet, 8, 1, 100, 100, output => {
+        let imagesU = output
+        //debugger
+        let imagesD = Utils.rotateImageArray(imagesU, 180)
+        let imagesL = Utils.rotateImageArray(imagesU, 270)
+        let imagesR = Utils.rotateImageArray(imagesU, 90)
+        let images = imagesU.concat(imagesD, imagesL, imagesR)
+        resolve(images)
+      })
+    })
+  }
+
+  //let imgArray = []
+
+  let sheetC = await sheet1pf()
+  let imgArray = await imagesArrPF(sheetC)
+
+  // imgArray.concat(imagesU)
+  // imgArray.concat(Utils.rotateImageArray(imagesU, 180))
+  // imgArray.concat(Utils.rotateImageArray(imagesU, 270))
+  // imgArray.concat(Utils.rotateImageArray(imagesU, 90))
+
+  return imgArray
+
+  // sheet.onload = () => {
+  //   this.ready = true
+  //   let imagesU, imagesD, imagesL, imagesR
+  //   //promises
+  //   Utils.cutSpriteSheetCallback(sheet, 8, 1, 100, 100, output => {
+  //     imagesU = output
+  //     //debugger
+  //     imagesD = Utils.rotateImageArray(imagesU, 180)
+  //     imagesL = Utils.rotateImageArray(imagesU, 270)
+  //     imagesR = Utils.rotateImageArray(imagesU, 90)
+  //     this.images = imagesU.concat(imagesD, imagesL, imagesR)
+  //     Projectile.imagesLoaded = true
+  //     console.log('projectile images loaded')
+  //   })
+  // }
 }

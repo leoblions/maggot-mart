@@ -182,5 +182,39 @@
       "Hey! Someonne let me out!!!",
       "Maybe there's a key down here or another way"
     ]
+  },
+  {
+    "chainID": 11,
+    "actionID": 4,
+    "speaker": [
+      "Jess",
+      "Elliot",
+      "Elliot",
+      "Elliot",
+      "Elliot",
+      "Elliot",
+      "Elliot"
+    ],
+    "line": [
+      "Hey! Who locked the basement door!? Was it you?",
+      "No, I was in the front area. I heard screaming and came back here.",
+      "I heard something moving inside the vents over there",
+      "That door's so old it probably clicked shut on its own.",
+      "Maybe block the door with something heavy next time",
+      "Alfred left but he wants you to take that trash bag to the dumpster.",
+      "Take this bug spray, I saw some roaches back there too"
+    ]
+  },
+  {
+    "chainID": 12,
+    "actionID": -1,
+    "speaker": [
+      "Loudspeaker",
+      "Loudspeaker"
+    ],
+    "line": [
+      "Attention shoppers",
+      "We are closing in 10 minutes. Please move towards the checkout."
+    ]
   }
 ]

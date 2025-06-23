@@ -102,8 +102,8 @@ export class Splat {
   addUnit (worldX, worldY, kind) {
     let newUnit
     for (let i = 0; i < MAX_UNITS; i++) {
-      let element = this.units[i]
-      if (!(element instanceof Unit) || !element.active) {
+      let unit = this.units[i]
+      if (!(unit instanceof Unit) || !unit.active) {
         if (this.swooshPacer()) {
           newUnit = new Unit(worldX, worldY, kind)
           this.units[i] = newUnit
@@ -117,14 +117,14 @@ export class Splat {
 
   draw () {
     //this.game.ctx.drawImage(this.images[0], 0, 0, SPRITE_WIDTH, SPRITE_HEIGHT)
-    for (let element of this.units) {
+    for (let unit of this.units) {
       //console.log('draw unit')
       //debugger
-      if (element instanceof Unit && element.active) {
+      if (unit instanceof Unit && unit.active) {
         // debugger
-        let screenX = element.worldX - this.game.cameraX
-        let screenY = element.worldY - this.game.cameraY
-        let image = this.images[element.frame]
+        let screenX = unit.worldX - this.game.cameraX
+        let screenY = unit.worldY - this.game.cameraY
+        let image = this.images[unit.frame]
         if (image == null) {
           return
         }
@@ -148,24 +148,24 @@ export class Splat {
         let dX = Math.abs(entX - unit.worldX)
         let dY = Math.abs(entY - unit.worldY)
         if (dX < DAMAGE_DIST && dY < DAMAGE_DIST) {
-          entity.takeDamage()
+          //entity.takeDamage()
         }
       }
     }
   }
 
   update () {
-    for (let element of this.units) {
-      if (element instanceof Unit && element.active) {
-        this.checkUnitHitEntity(element)
-        element.worldX += element.velX
-        element.worldY += element.velY
-        if (element.life > 0) {
-          element.life -= 1
+    for (let unit of this.units) {
+      if (unit instanceof Unit && unit.active) {
+        this.checkUnitHitEntity(unit)
+        unit.worldX += unit.velX
+        unit.worldY += unit.velY
+        if (unit.life > 0) {
+          unit.life -= 1
         } else {
-          element.active = false
+          unit.active = false
         }
-        element.updateFrame()
+        unit.updateFrame()
       }
     }
   }

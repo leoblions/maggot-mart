@@ -1,4 +1,7 @@
 import * as Utils from './utils.js'
+
+const OBJECTIVE_TEXT_SCREENX = 10
+const OBJECTIVE_TEXT_SCREENY = 10
 const SCORE_X = 5
 const SCORE_Y = 10
 const SCORE_FONT = `${SCORE_Y}px sans-serif`
@@ -38,8 +41,8 @@ export class Hud {
     this.objectiveString = ''
 
     this.objectiveText = this.game.rastertext.addUnitToIndex(
-      200,
-      10,
+      OBJECTIVE_TEXT_SCREENX,
+      OBJECTIVE_TEXT_SCREENY,
       0,
 
       this.objectiveStringTemplate
@@ -116,11 +119,15 @@ export class Hud {
 
   draw () {
     let ctx = this.game.ctx
-    ctx.fillStyle = 'white' //color of font
-    ctx.font = `12px sans-serif`
+    ctx.fillStyle = 'red' //color of font
+    ctx.font = `14px sans-serif`
     ctx.fillText(SCORE_TEMPLATE + this.game.score, SCORE_X, SCORE_Y)
     ctx.fillText('TPS ' + this.game.displayTPS, SCORE_X, SCORE_Y + 20)
-    ctx.fillText(`Player:  ${this.gridX} ${this.gridY}`, SCORE_X, SCORE_Y + 40)
+    ctx.fillText(
+      `Player:  X ${this.gridX} Y ${this.gridY} Lev ${this.game.level}`,
+      SCORE_X,
+      SCORE_Y + 40
+    )
     ctx.fillText(`Stage:  ${this.game.brain.stage}  `, SCORE_X, SCORE_Y + 60)
     this.drawHealthbar()
   }

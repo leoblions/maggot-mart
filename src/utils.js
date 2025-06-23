@@ -536,6 +536,20 @@ export function cutSpriteSheetCallback (
   callback(sprites)
 }
 
+export function cutSpriteSheetSingleCallback (
+  spritesheet,
+  startX,
+  startY,
+  width,
+  height,
+  callback
+) {
+  let currImage = getSubImage0(spritesheet, startX, startY, width, height)
+  //console.log(sprites instanceof Array)
+
+  callback(currImage)
+}
+
 export async function cutSpriteSheetPR (spritesheet, cols, rows, width, height) {
   let sprites = []
   for (let y = 0; y < rows; y++) {
