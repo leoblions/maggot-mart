@@ -1,7 +1,7 @@
 [
   {
     "locationID": 0,
-    "name": "box",
+    "name": "BOX",
     "_desc": "gridX, gridY, level",
     "gridX": 8,
     "gridY": 8,
@@ -9,7 +9,7 @@
   },
   {
     "locationID": 1,
-    "name": "dumpster",
+    "name": "DUMPSTER",
     "_desc": "gridX, gridY, level",
     "gridX": 16,
     "gridY": 13,
@@ -17,18 +17,26 @@
   },
   {
     "locationID": 2,
-    "name": "trash can",
+    "name": "TRASHCAN_1",
     "_desc": "gridX, gridY, level",
     "gridX": 17,
     "gridY": 3,
-    "level": 1
+    "level": 0
   },
   {
     "locationID": 3,
-    "name": "bags basement",
+    "name": "BAGS_BASEMENT",
     "_desc": "gridX, gridY, level",
     "gridX": 17,
     "gridY": 17,
+    "level": 3
+  },
+  {
+    "locationID": 4,
+    "name": "BASEMENT_EXIT",
+    "_desc": "gridX, gridY, level",
+    "gridX": 13,
+    "gridY": 12,
     "level": 3
   }
 ]

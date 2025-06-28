@@ -157,7 +157,7 @@
   },
   {
     "chainID": 9,
-    "actionID": -1,
+    "actionID": 5,
     "speaker": [
       "Jess",
       "Door",
@@ -190,6 +190,7 @@
       "Jess",
       "Elliot",
       "Elliot",
+      "Jess",
       "Elliot",
       "Elliot",
       "Elliot",
@@ -198,16 +199,17 @@
     "line": [
       "Hey! Who locked the basement door!? Was it you?",
       "No, I was in the front area. I heard screaming and came back here.",
-      "I heard something moving inside the vents over there",
-      "That door's so old it probably clicked shut on its own.",
-      "Maybe block the door with something heavy next time",
+      "Then I heard something scrambling inside the vents over there",
+      "Then who locked me in?",
+      "I don't know. I saw Alfred leave when we were talking. ",
+      "I would block the door with something heavy next time",
       "Alfred left but he wants you to take that trash bag to the dumpster.",
       "Take this bug spray, I saw some roaches back there too"
     ]
   },
   {
     "chainID": 12,
-    "actionID": -1,
+    "actionID": 7,
     "speaker": [
       "Loudspeaker",
       "Loudspeaker"
@@ -215,6 +217,18 @@
     "line": [
       "Attention shoppers",
       "We are closing in 10 minutes. Please move towards the checkout."
+    ]
+  },
+  {
+    "chainID": 13,
+    "actionID": 8,
+    "speaker": [
+      "Jess",
+      "Jess"
+    ],
+    "line": [
+      "What's that noise?",
+      "I'd better go."
     ]
   }
 ]

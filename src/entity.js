@@ -56,7 +56,8 @@ class Unit {
     this.worldX = worldX
     this.worldY = worldY
     this.active = true // is entity displayed, processed for current room.  Set unit reference to null to remove
-    this.alive = true // wen dead, unit can be deleted
+    // If unit is alive but in another room then it is inactive and not deleted but not shown
+    this.alive = true // when dead, unit can be deleted
     this.deactivateOnInteract = false
     this.imageSet = 0 // up down left right
     this.level = Entity.currentLevel
@@ -322,21 +323,44 @@ export class Entity {
     }
   }
 
+  placeTargetByName (collection, name) {
+    for (let loc of collection) {
+      let locname = loc?.name ?? null
+
+      if (locname == name) {
+        let { gridX, gridY, level } = loc
+
+        let entity = (this.units[TARGET_MARKER_ARRAY_INDEX] =
+          this.createUnitGridLoc(gridX, gridY, Enums.EK_TARGET, level))
+        entity.worldX = gridX * this.game.tilegrid.tileSize
+        entity.worldY = gridY * this.game.tilegrid.tileSize
+        return entity
+      }
+    }
+    console.error('location not found ' + name)
+    return null
+  }
+
   placeTarget (gridX, gridY, level) {
     let index = TARGET_MARKER_ARRAY_INDEX
-    let kind = EK_TARGET
+    let kind = Enums.EK_TARGET
 
     this.units[index] = this.createUnitGridLoc(gridX, gridY, kind, level)
     if (level == this.game.level) {
-      this.units[index].active = true
-      this.units[index].visible = true
+      let entity = this.units[index]
+      entity.active = true
+      entity.visible = true
+      entity.worldX = gridX * this.game.tilegrid.tileSize
+      entity.worldY = gridY * this.game.tilegrid.tileSize
     }
     console.log('added objective marker ' + level)
   }
   activateTarget () {
     let marker = this.units[TARGET_MARKER_ARRAY_INDEX]
-
+    //debugger
     marker.active = true
+    marker.alive = true
+    marker.life = 100
   }
   targetIsSet () {
     let marker = this.units[TARGET_MARKER_ARRAY_INDEX]
@@ -685,7 +709,7 @@ export class Entity {
         case Enums.EK_TARGET:
           cycleImageHere = true
           min = 0
-          max = 6
+          max = 5
           break
         default:
           // bugs

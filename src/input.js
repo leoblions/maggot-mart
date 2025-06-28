@@ -172,6 +172,7 @@ export class Input {
     if (keys['e'] == true) {
       this.game.entity.playerPressedActivate = true
       this.game.dialog.changeMessageRequested = true
+      this.game.brain.stageFlags.saveAll = true
     }
     //debugger
   }

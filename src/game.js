@@ -20,7 +20,7 @@ import * as Utils from './utils.js'
 import * as Assets from './assets.js'
 ;('use strict')
 
-const msPerTick = 60 / 1000
+const msPerTick = 1000 / 60
 const tileSize = 10
 export const TILESIZE = 100
 const NO_SCROLL = true
@@ -28,7 +28,8 @@ const TPS_COUNTER_INTERVAL_SEC = 5
 const FRAME_PERIOD_MS = Math.floor(1000 / 60)
 const START_HEALTH = 100
 
-export let game
+export var game
+document.game = game
 
 export class Game {
   #mode = 0

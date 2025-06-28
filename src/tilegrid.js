@@ -220,7 +220,6 @@ export class Tilegrid {
 
   setTile (gridX, gridY, kind) {
     // does not persist across level changes
-    
 
     if (
       kind < this.images.length &&
@@ -263,7 +262,13 @@ export class Tilegrid {
     if (gridX < 0 || gridX >= tilesX || gridY < 0 || gridY >= tilesY) {
       return true
     }
-    let kind = Tilegrid.grid[gridY][gridX]
+    let kind = -1
+    try {
+      kind = Tilegrid.grid[gridY][gridX]
+    } catch {
+      return true
+    }
+
     let solid = Tilegrid.solidArr[kind]
 
     return solid

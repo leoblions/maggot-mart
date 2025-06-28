@@ -3,8 +3,8 @@ const startGridX = 2
 const startGridY = 4
 const spriteWidth = 70
 const spriteHeight = 100
-const WALK_SPEED = 2
-const RUN_SPEED = 5
+const WALK_SPEED = 5
+const RUN_SPEED = 8
 
 const COLL_WIDTH = 50
 const COLL_HEIGHT = 80

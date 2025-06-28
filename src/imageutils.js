@@ -118,7 +118,6 @@ export async function getImagesFromURL (URL, cols, rows, width, height) {
       let sheet = new Image()
       sheet.src = URL
       sheet.onload = () => {
-        console.error('load image good')
         resolve(sheet)
       }
       sheet.onerror = () => {
@@ -137,8 +136,6 @@ export async function getImagesFromURL (URL, cols, rows, width, height) {
         } else {
           resolve(output)
         }
-
-        console.log('pickup images loaded')
       })
     })
     let imageArray = await imageCutP

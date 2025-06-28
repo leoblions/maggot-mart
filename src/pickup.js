@@ -26,7 +26,7 @@ const MAX_KIND = 35
 const CULL_DISTANCE = 500
 const TOUCH_PLAYER_RANGE = 50
 const CHECK_TOUCH_PERIOD = 100
-const ADD_OBJECTIVE_ITEM_PERIOD = 1000
+const ADD_OBJECTIVE_ITEM_PERIOD = 10
 const OBJECTIVE_ITEM_SLOT = 0
 const RAND_ITEM_MIN_INDEX = 1 //slot zero is reserved for objective items
 const FRUIT_ADD_HEALTH_AMOUNT = 15
@@ -50,8 +50,9 @@ class Unit {
     this.kind = kind // 0 food, 1 box, 2 spray, 3 trap, 4 key
     this.worldX = worldX
     this.worldY = worldY
-    this.active = true
-    this.visible = true // false if off screen
+    this.alive = true
+    this.active = true // item is alive, and in current room
+    this.visible = true // item is alive, in current room, and in or near viewport
     this.frame = 0
     this.level = 0
     this.image = null // reference to image object to use as sprite
@@ -93,15 +94,19 @@ class Unit {
         break
       case Enums.PK_TORCH:
         collection = Pickup.imagesTorch
+        return collection[0]
         break
       case Enums.PK_PROPANE:
         collection = Pickup.imagesPropane
+        return collection[0]
         break
       case Enums.PK_BAG:
         collection = Pickup.imagesBag
+        return collection[0]
         break
       case Enums.PK_MEDKIT:
         collection = Pickup.imagesMedkit
+        return collection[0]
         break
 
       default:
@@ -126,7 +131,9 @@ export class Pickup {
     this.imagesProduce = null
     this.imagesCan = null
     this.imagesKey = null
+    this.imagesBag = null
     this.imagesInitialized = false
+    this.recheckVisible = false
   }
   constructor (game) {
     this.objectiveCategory = 0 // 0 box, 1 spray, 2 key, 3 trap - does not correspond to kinds
@@ -453,6 +460,7 @@ export class Pickup {
     let currentObjItem = this.units[OBJECTIVE_ITEM_SLOT]
     return currentObjItem
   }
+  getObjectivePickup = this.getObjectiveItem
 
   addObjectiveUnit (category = this.objectiveCategory) {
     category = Number(category)
@@ -498,8 +506,9 @@ export class Pickup {
     let newUnit = null
 
     let currentObjItem = this.units[OBJECTIVE_ITEM_SLOT]
-    if (currentObjItem == undefined || currentObjItem?.active == false) {
+    if (true) {
       //debugger
+
       //let kind = this.selectObjectiveItemKindFromCategory(category)
 
       let worldX = gridX * this.game.tilegrid.tileSize
@@ -509,6 +518,8 @@ export class Pickup {
       newUnit.objective = true
       //newUnit.category = category
       newUnit.level = level
+      newUnit.alive = true
+      newUnit.visible = true
     }
 
     return newUnit
@@ -523,7 +534,7 @@ export class Pickup {
     for (let unit of this.units) {
       //console.log('draw unit')
       //debugger
-      if (unit instanceof Unit && unit.active && unit.visible) {
+      if (unit instanceof Unit && unit.visible) {
         // debugger
         let screenX = unit.worldX - this.game.cameraX + SPRITE_OFFSET
         let screenY = unit.worldY - this.game.cameraY + SPRITE_OFFSET
@@ -590,22 +601,37 @@ export class Pickup {
       this.addObjectiveUnit()
     }
 
-    for (let unit of this.units) {
-      if (unit instanceof Unit && unit.active) {
+    for (let index in this.units) {
+      let unit = this.units[index]
+      if (!(unit instanceof Unit)) {
+        continue
+      }
+      if (unit.kind == Enums.PK_BAG) {
+        debugger
+      }
+      if (unit.alive == false) {
+        this.units[index] = null
+        return
+      }
+      if (unit.level == this.game.level) {
+        unit.active = true
+        if (checkVisible || this.recheckVisible) {
+          unit.visible = unit.checkRange(CULL_DISTANCE)
+        }
+        unit.visible = true
+      } else {
+        unit.active = false
+        unit.visible = false
+      }
+      if (unit.active) {
         this.checkUnitHitEntity(unit)
         unit.worldX += unit.velX
         unit.worldY += unit.velY
-        if (checkVisible) {
-          unit.visible = unit.checkRange(CULL_DISTANCE)
-          if (unit.level != this.game.level) {
-            unit.visible = false
-          } else {
-            unit.visible = true
-          }
-        }
         if (checkTouched && unit.checkRange(TOUCH_PLAYER_RANGE)) {
           this.collectItemSpecialActions(unit)
           unit.active = false
+          unit.alive = false
+          this.units[index] = null
           this.game.sound.playSoundByName('chime1')
           this.game.score += 1
         }

@@ -3,6 +3,7 @@ import * as Assets from './assets.js'
 import { Rastertext } from './rastertext.js'
 
 const MESSAGE_DEBOUNCE = 500
+const REACTIVATION_DEBOUNCE = 1000
 const BOX_WIDTH = 350
 const BOX_HEIGHT = 100
 const TEXT_OFFSET_X = 20
@@ -10,6 +11,7 @@ const TEXT_OFFSET_Y = 25
 const DIALOG_BOC_LINE_MAX_CHARS = 25
 const DIALOG_BOX_LINES = 5
 const LINE_SPACING_Y = 10
+const DIALOG_END_COUNTER = 25
 
 /**
  *  display and update dialog boxes
@@ -53,6 +55,7 @@ export class Dialog {
     this.chainMaxLineNumber = 0
     this.playerPressedActivate = false
     this.onclose = null
+    this.lastActivationTime = Date.now()
     this.initChains()
   }
 
@@ -89,6 +92,12 @@ export class Dialog {
     if (this.active || !this.dialogPacer()) {
       return
     }
+    // let activationTime = Date.now()
+    // if (activationTime - this.lastActivationTime < REACTIVATION_DEBOUNCE) {
+    //   return
+    // } else {
+    //   this.lastActivationTime = activationTime
+    // }
     this.active = true
     this.currentChainID = chainID
     this.currentLineNumber = 0
@@ -133,12 +142,16 @@ export class Dialog {
     this.active = false
     this.game.player.freeze = false
     let actionID = this.currentChainObj?.actionID
+    this.lastActivationTime = Date.now()
+    this.game.brain.stageFlags.counter = DIALOG_END_COUNTER
+    this.game.entity.playerPressedActivate = false
+    this.game.brain.stageFlags.playerPressedTarget = false
     if (actionID != null) {
       this.game.brain.dialogInvokeAction(actionID)
     }
-    if (typeof this.onclose == 'function') {
-      this.onclose()
-    }
+    // if (typeof this.onclose == 'function') {
+    //   this.onclose()
+    // }
   }
 
   advanceDialogChain () {
