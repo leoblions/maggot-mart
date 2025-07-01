@@ -771,6 +771,10 @@ export class Entity {
     }
   }
 
+  setSpawner (enabled) {
+    Entity.spawner = enabled
+  }
+
   entityTouchPlayer (unit) {
     return Utils.near(
       unit.worldX,

@@ -98,7 +98,9 @@ export class Brain {
       location: null,
       locationID: 0,
       enabled: true,
-      kind: Enums.EK_MAGGOT
+      kind: Enums.EK_MAGGOT,
+      concurrent: -1, // -1 for unlimited
+      amountToSpawn: -1
     } // flags to modify behavior of actions, or disable them
     this.stageFlags = {
       category: 0,
@@ -244,37 +246,30 @@ export class Brain {
 
   getNextPickupLocation () {
     let defaultLocationRecord = null
-    let len = this.locationRecordsPickup.length
+    let location = null
+    let thisStageRecords = this.getLocationsFromStageID(this.stage).locations
+
+    let len = thisStageRecords.length
     // default location to 0
     if (undefined == this.currentItemIndex) {
       this.currentItemIndex = 0
-    } else {
-      if (this.currentItemIndex < len) {
-        this.currentItemIndex += 1
-      } else {
-        this.currentItemIndex = 0
-      }
     }
 
-    let desiredRecord = this.getLocationsFromStageID(this.stage)
-    if (desiredRecord != null) {
-      let locations = desiredRecord.locations
-      let location = locations[this.currentItemIndex]
+    //let desiredRecord = this.getLocationsFromStageID(this.stage)
+    if (thisStageRecords != null) {
+      location = thisStageRecords[this.currentItemIndex]
       if (location == undefined) {
-        location = locations[0]
+        location = thisStageRecords[0]
       }
-      return location
-    } else {
-      desiredRecord = this.getLocationsFromStageID(DEFAULT_ITEM_SPAWN_STAGE)
-      if (null == desiredRecord) {
-        throw 'Could not find matching stage item location record'
-      }
-      let locations = desiredRecord.locations
-      let location = locations[this.currentItemIndex]
-      return location
+      //return location
     }
 
-    throw 'Could not find matching stage item location record'
+    if (this.currentItemIndex < len) {
+      this.currentItemIndex += 1
+    } else {
+      this.currentItemIndex = 0
+    }
+    return location
   }
 
   getCurrentItemLocation () {
@@ -356,12 +351,6 @@ export class Brain {
       this.stageFlags.carry = true
       this.stageFlags.pickupPressed = true
     }
-  }
-
-  incrementObjectiveCounter (updateText = true) {
-    //debugger
-    this.stageFlags.complete += 1
-    this.stageFlags.incomplete -= 1
   }
 
   collectItemKindAction (pickupKind) {
@@ -701,6 +690,9 @@ export class Brain {
     // stage 5
     // ASSESS
     let OIactive = this.game.pickup.isObjectiveItemActive()
+    this.stageFlags.pickupKind = Enums.PK_TRAP
+    let spawnTargetNow = false
+    let spawnPickupNow = false
 
     // ADVANCE STAGE
     if (
@@ -717,9 +709,11 @@ export class Brain {
     if (!this.stageFlags.pickupIsSet && this.stageFlags.pickupsPressed == 0) {
       console.log('MGM set first pickup')
       this.stageFlags.carry = false
-      this.stageFlags.readyForNextPickup = true
+      spawnPickupNow = true
+      //this.stageFlags.readyForNextPickup = true
       this.stageFlags.setFirstPickup = false
-      this.stageFlags.targetIsSet = false
+      this.stageFlags.pickupIsSet = true
+      //this.stageFlags.targetIsSet = false
       this.setObjectiveTextCT(
         this.stageFlags.objectiveString,
         this.stageFlags.pickupsPressed,
@@ -739,37 +733,44 @@ export class Brain {
 
     if (this.stageFlags.pickupPressed) {
       console.log('MGM touch pickup')
-      this.incrementObjectiveCounter()
+
       this.stageFlags.pickupsPressed += 1
       this.stageFlags.pickupPressed = false
       this.stageFlags.complete += 1
-      this.setObjectiveTextCT(
-        this.stageFlags.objectiveString,
-        this.stageFlags.pickupsPressed,
-        this.stageFlags.pickupsRequired
-      )
-      if (this.stageFlags.pickupsPressed < this.stageFlags.pickupsRequired) {
-        this.stageFlags.readyForNextPickup = true
+
+      if (
+        this.stageFlags.pickupsPressed < this.stageFlags.pickupsRequired &&
+        this.stageFlags.targetIsSet == false
+      ) {
+        // spawn more pickups
+        spawnPickupNow = true
+        this.setObjectiveTextCT(
+          this.stageFlags.objectiveString,
+          this.stageFlags.pickupsPressed,
+          this.stageFlags.pickupsRequired
+        )
       } else {
-        this.stageFlags.readyForNextTarget = true
+        // enable target
+        spawnTargetNow = true
       }
     }
 
     // PLACE TARGET
 
-    if (this.stageFlags.readyForNextTarget) {
+    if (spawnTargetNow) {
       console.log('MGM place target')
       this.setObjectiveTextIntermission('put in the green dumpster')
       this.stageFlags.readyForNextTarget = false
       //let markerObj = this.getMarkerObjectFromID(this.stageFlags.locationID)
       this.stageFlags.markerSet = true
+      this.stageFlags.targetIsSet = true
       let loc = this.getLocationByName(this.locationRecordsTarget, 'DUMPSTER')
       this.game.entity.placeTarget(loc.gridX, loc.gridY, loc.level)
     }
 
     // PLACE PICKUP
 
-    if (this.stageFlags.readyForNextPickup) {
+    if (spawnPickupNow) {
       this.stageFlags.readyForNextPickup = false
       this.stageFlags.pickupPressed = false
       console.log('MGM place pickup')
@@ -781,7 +782,7 @@ export class Brain {
           location.gridX,
           location.gridY,
           location.level,
-          this.stageFlags.pickupKind
+          Enums.PK_TRAP
         )
 
         this.stageFlags.readyForNextObjective = false
@@ -793,28 +794,30 @@ export class Brain {
     }
 
     // player is not carrying and OI not set
-    if (!this.stageFlags.carry && this.stageFlags.complete == 0 && !OIactive) {
-      this.placeObjectiveItem()
-    } else if (this.stageFlags.carry && !OIactive) {
-      // only do si if pickup is in current level
-      if (!this.game.pickup.stageFlagsItemExists()) {
-        this.stageFlags.readyForNextObjective = false
-        //this.game.pickup.addObjectiveUnit(this.stageFlags.category)
-        this.placeObjectiveItem()
+    // if (!this.stageFlags.carry && this.stageFlags.complete == 0 && !OIactive) {
+    //   this.placeObjectiveItem()
+    // } else if (this.stageFlags.carry && !OIactive) {
+    //   // only do si if pickup is in current level
+    //   if (!this.game.pickup.stageFlagsItemExists()) {
+    //     this.stageFlags.readyForNextObjective = false
+    //     //this.game.pickup.addObjectiveUnit(this.stageFlags.category)
+    //     this.placeObjectiveItem()
 
-        this.stageFlags.carry = false
-        console.log('(2)placed obj item ' + this.stageFlags.category)
-      }
-    }
+    //     this.stageFlags.carry = false
+    //     console.log('(2)placed obj item ' + this.stageFlags.category)
+    //   }
+    // }
   }
 
   missionGatherCans () {
     // stage 3
     // ASSESS
+
+    this.stageFlags.pickupKind = Enums.PK_SPRAY
     let OIactive = this.game.pickup.isObjectiveItemActive()
 
     // ADVANCE STAGE
-    if (this.stageFlags.pickupsPressed >= this.stageFlags.pickupsRequired) {
+    if (this.stageFlags.complete >= this.stageFlags.total) {
       this.stageFlags.advanceStage = true
       this.stageFlags.carry = false
       this.stageFlags.targetPressed = false
@@ -822,64 +825,81 @@ export class Brain {
     }
 
     // FIRST PICKUP
-    if (!this.stageFlags.pickupIsSet && this.stageFlags.pickupsPressed == 0) {
+    if (!this.stageFlags.pickupIsSet && this.stageFlags.complete == 0) {
       console.log('MGC set first pickup')
       this.stageFlags.carry = false
       this.stageFlags.readyForNextPickup = true
+
+      let location = this.getNextPickupLocation()
+      console.log(location)
+      this.stageFlags.pickupIsSet = true
+      if (location != undefined) {
+        this.game.pickup.addObjectiveUnitXYLK(
+          location.gridX,
+          location.gridY,
+          location.level,
+          Enums.PK_SPRAY
+        )
+      }
       this.stageFlags.setFirstPickup = false
       this.stageFlags.targetIsSet = false
+      this.stageFlags.pickupIsSet = true
     }
 
     // PLAYER TOUCH PICKUP
 
     if (this.stageFlags.pickupPressed) {
       console.log('MGC touch pickup')
-      this.incrementObjectiveCounter()
 
-      this.stageFlags.pickupsPressed += 1
+      //this.stageFlags.pickupsPressed += 1
       this.stageFlags.pickupPressed = false
+      this.stageFlags.complete += 1
+      this.stageFlags.pickupIsSet = false
       this.setObjectiveTextCT(
         this.stageFlags.objectiveString,
-        this.stageFlags.pickupsPressed,
-        this.stageFlags.pickupsRequired
+        this.stageFlags.complete,
+        this.stageFlags.total
       )
-      if (this.stageFlags.pickupsPressed < this.stageFlags.pickupsRequired) {
-        this.stageFlags.readyForNextPickup = true
-      } else {
-        this.stageFlags.readyForNextTarget = true
+      if (this.stageFlags.total == this.stageFlags.complete) {
+        this.setObjectiveText('Talk to boss')
       }
     }
 
     // PLACE TARGET
 
-    if (this.stageFlags.readyForNextTarget) {
-      console.log('MGC place target')
-      this.stageFlags.readyForNextTarget = false
-      let markerObj = this.getMarkerObjectFromID(this.stageFlags.locationID)
-      this.stageFlags.markerSet = true
-      this.game.entity.placeTarget(
-        markerObj.gridX,
-        markerObj.gridY,
-        markerObj.level
-      )
-    }
+    // if (this.stageFlags.readyForNextTarget) {
+    //   console.log('MGC place target')
+    //   this.stageFlags.readyForNextTarget = false
+    //   let markerObj = this.getMarkerObjectFromID(this.stageFlags.locationID)
+    //   this.stageFlags.markerSet = true
+    //   this.game.entity.placeTarget(
+    //     markerObj.gridX,
+    //     markerObj.gridY,
+    //     markerObj.level
+    //   )
+    // }
 
     // PLACE PICKUP
+    //console.log(OIactive)
 
-    if (this.stageFlags.readyForNextPickup) {
+    if (
+      this.stageFlags.complete < this.stageFlags.total &&
+      this.stageFlags.pickupIsSet == false
+    ) {
+      debugger
       this.stageFlags.readyForNextPickup = false
       this.stageFlags.pickupPressed = false
       console.log('MGC place pickup ' + this.stageFlags.pickupKind)
 
       let location = this.getNextPickupLocation()
       console.log(location)
-
+      this.stageFlags.pickupIsSet = true
       if (location != undefined) {
         this.game.pickup.addObjectiveUnitXYLK(
           location.gridX,
           location.gridY,
           location.level,
-          this.stageFlags.pickupKind
+          Enums.PK_SPRAY
         )
 
         this.stageFlags.readyForNextObjective = false
@@ -891,19 +911,19 @@ export class Brain {
     }
 
     // player is not carrying and OI not set
-    if (!this.stageFlags.carry && this.stageFlags.complete == 0 && !OIactive) {
-      this.placeObjectiveItem()
-    } else if (this.stageFlags.carry && !OIactive) {
-      // only do si if pickup is in current level
-      if (!this.game.pickup.stageFlagsItemExists()) {
-        this.stageFlags.readyForNextObjective = false
-        //this.game.pickup.addObjectiveUnit(this.stageFlags.category)
-        this.placeObjectiveItem()
+    // if (!this.stageFlags.carry && this.stageFlags.complete == 0 && !OIactive) {
+    //   this.placeObjectiveItem()
+    // } else if (this.stageFlags.carry && !OIactive) {
+    //   // only do si if pickup is in current level
+    //   if (!this.game.pickup.stageFlagsItemExists()) {
+    //     this.stageFlags.readyForNextObjective = false
+    //     //this.game.pickup.addObjectiveUnit(this.stageFlags.category)
+    //     this.placeObjectiveItem()
 
-        this.stageFlags.carry = false
-        console.log('(2)placed obj item ' + this.stageFlags.category)
-      }
-    }
+    //     this.stageFlags.carry = false
+    //     console.log('(2)placed obj item ' + this.stageFlags.category)
+    //   }
+    // }
   }
 
   missionTrashBasement () {
@@ -1166,6 +1186,7 @@ export class Brain {
     this.stageFlags.pickupsPressed = 0
     this.stageFlags.targetsPressed = 0
     this.stageFlags.complete = 0
+    this.currentItemIndex = 0
 
     this.stageFlags.advanceStage = false // must do at start of every stage to prevent runaway loop
     // pickup pickupKinds 0 food, 1 box, 2 spray, 3 trap, 4 key
@@ -1206,6 +1227,8 @@ export class Brain {
         this.stageFlags.targetsRequired = 1
         this.stageFlags.targetsPressed = 0
         this.stageFlags.pickupsPressed = 0
+        this.stageFlags.total = 4
+        this.stageFlags.complete = 0
         this.stageFlags.objectiveString = 'Bug spray'
         try {
           this.setObjectiveTextCT(
@@ -1258,6 +1281,7 @@ export class Brain {
         this.game.entity.entitySetDialogChain(Enums.EK_ELLIOT, 11)
         this.stageFlags.stageDialogFlag = 0
         this.stageFlags.actorPressed = false
+        this.spawnerFlags.concurrent = 1
         let elliotLoc = this.getLocation(this.locationRecordsActor, 6)
         this.game.entity.removeEntityByKind(Enums.EK_TREY)
         this.game.entity.removeEntityByKind(Enums.EK_DARRYL)
@@ -1293,6 +1317,14 @@ export class Brain {
     if (undefined == this.locationRecordsSpawner) {
       console.warn(' locationRecordsSpawner not loaded')
       return
+    }
+
+    let currentAmountOfEnemies = this.game.entity.getAmountActiveEnemies()
+    if (
+      this.spawnerFlags.concurrent != -1 &&
+      currentAmountOfEnemies > this.spawnerFlags.concurrent
+    ) {
+      return // too many concurrent enemies
     }
 
     if (
@@ -1429,6 +1461,9 @@ export class Brain {
         break
       case 8:
         this.spawnerFlags.enabled = !this.spawnerFlags.enabled
+        this.game.entity.setSpawner(this.spawnerFlags.enabled)
+        this.game.entity.currentEnemiesLimit = 1
+
         break
     }
   }
